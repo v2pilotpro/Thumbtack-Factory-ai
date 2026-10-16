@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Thumbtack Industries</title>
+<style>
+:root{--bg:#fff;--ink:#000;--mut:#444;--ln:#999;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 "Times New Roman",Times,serif}
+#con{background:#000;color:#fff;font:13px/1.45 "Courier New",monospace;height:116px;margin:10px;cursor:text;transition:height .12s;padding:8px;display:flex;flex-direction:column;position:relative}
+#log{flex:1;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+#con.open{height:144px}
+#cmd{position:relative;display:none;gap:6px;align-items:center;border-top:1px solid #333;padding-top:4px;margin-top:4px}
+#con.open #cmd{display:flex}
+#sug{display:none;position:absolute;left:0;right:0;bottom:100%;margin-bottom:3px;background:#111;border:1px solid #555;max-height:92px;overflow-y:auto;z-index:5}
+#sug.on{display:block}
+.si{display:flex;justify-content:space-between;gap:12px;padding:1px 8px;cursor:pointer;font-size:13px}
+.si span{color:#888;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.si.sel{background:#2d2d2d}.si.hint{cursor:default;color:#999}
+#ci{flex:1;min-width:0;background:transparent;color:#fff;border:0;font:13px "Courier New",monospace;padding:0;outline:0}
+#tb{background:#222;color:#bbb;border:1px solid #444;font:11px "Courier New",monospace;padding:1px 6px;cursor:pointer}
+#ci:focus-visible{outline:1px solid #888}#ci::placeholder{color:#777}
+#con div{white-space:pre-wrap}
+#con{border:1px solid #3a3a3a;box-shadow:0 0 0 1px #000,0 0 14px rgba(255,255,255,.08),inset 0 0 36px rgba(255,255,255,.05);color:#ececec}
+#con::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.6) 100%)}
+#con::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.04) 0 1px,transparent 1px 3px);animation:flick 5s infinite}
+#log div{text-shadow:0 0 5px rgba(255,255,255,.55)}
+.nl{animation:rev .55s steps(36,end)}
+.cur{display:inline-block;width:.6em;height:1em;background:#fff;vertical-align:-2px;margin-left:3px;box-shadow:0 0 6px rgba(255,255,255,.8);animation:blink 1.05s steps(1) infinite}
+#con.open .cur{display:none}
+.ps{color:#9a9a9a;white-space:nowrap;text-shadow:0 0 4px rgba(255,255,255,.35)}
+#ci{text-shadow:0 0 5px rgba(255,255,255,.5);caret-color:#fff}
+#sug{font-family:"Courier New",monospace;box-shadow:0 0 12px rgba(255,255,255,.12)}
+#con ::selection{background:#fff;color:#000}
+@keyframes rev{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes blink{50%{opacity:0}}
+@keyframes flick{0%,100%{opacity:1}46%{opacity:.85}48%{opacity:1}74%{opacity:.9}76%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.nl,.cur,#con::after{animation:none}}
+.w{padding:0 10px;max-width:355px}
+#cols{display:flex;flex-flow:column wrap;align-content:flex-start;column-gap:28px;padding:0 10px;overflow-x:auto;overflow-y:hidden;height:420px}
+#cols section{width:335px;max-width:100%}
+h1{font-size:24px;margin:10px 0 4px}
+.sub{color:var(--mut);font-size:14px;margin-bottom:10px}
+h2{font-size:16px;margin:18px 0 4px;border-bottom:1px solid var(--ln)}
+#rbox,#abox{margin:10px 0 0 6px;padding-left:10px;border-left:2px solid var(--ink)}
+#rbox h2.sub,#abox h2.sub{font-size:13px;margin:0 0 4px;border:0}
+:root[data-theme="dark"]{--bg:#181818;--ink:#e8e8e8;--mut:#b4b4b4;--ln:#555;color-scheme:dark}
+:root[data-theme="dark"] button:not(.ib):not(.rc){background:linear-gradient(to bottom,#5a5a5a 0%,#464646 50%,#333 100%);color:#f2f2f2;border-color:#8a8a8a;text-shadow:0 1px 0 rgba(0,0,0,.5)}
+:root[data-theme="dark"] button:not(.ib):not(.rc):hover:not(:disabled){background:linear-gradient(to bottom,#686868 0%,#525252 50%,#3c3c3c 100%);border-color:#b0b0b0}
+:root[data-theme="dark"] button:not(.ib):not(.rc):active:not(:disabled){background:linear-gradient(to bottom,#2a2a2a,#3b3b3b);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+:root[data-theme="dark"] button:not(.ib):not(.rc):disabled{background:linear-gradient(to bottom,#2e2e2e,#282828);color:#7a7a7a;border-color:#444;text-shadow:none}
+:root button.sel:not(.ib):not(.rc){background:var(--ink);color:var(--bg);border-color:var(--ink);text-shadow:none}
+:root[data-theme="dark"] #fsvg svg,:root[data-theme="dark"] #mg svg{filter:invert(1)}
+.rc{display:grid;grid-template-columns:1fr auto;gap:0 8px;width:100%;text-align:left;margin:5px 0;padding:4px 7px;border:1px solid var(--ink);border-radius:4px;background:linear-gradient(to bottom,#e9e9e9 0%,#dddddd 55%,#cbcbcb 100%);color:var(--ink);font:12px Arial,sans-serif;cursor:pointer}
+.rc small{grid-column:1/3;color:var(--mut);font-size:11px}
+.rc:disabled{opacity:.55;cursor:default;border-color:var(--ln);color:var(--ink);background:linear-gradient(to bottom,#e8e8e8,#dfdfdf)}
+.rc:not(:disabled):hover{background:var(--ink);color:var(--bg)}.rc:not(:disabled):hover small{color:var(--bg)}
+#itbox,#fbox,#gbox,#pbox,#sbox{border:2px solid var(--ink);padding:3px 8px;margin:6px 0 10px}
+.itn b{font-size:20px}.itn span{color:var(--mut);font-size:13px}
+#itbox .bar{height:6px;margin:3px 0}
+#abp{display:none;border:1px solid var(--ink);padding:6px 8px;margin-top:6px}.ar{margin:5px 0;font-size:14px}.ar button{min-width:24px}
+.rc.on{background:var(--ink);color:var(--bg)}
+:root[data-theme="dark"] .rc{background:linear-gradient(to bottom,#505050 0%,#404040 55%,#323232 100%);border-color:#aaa;color:#eee}
+:root[data-theme="dark"] .rc:disabled{background:linear-gradient(to bottom,#2e2e2e,#282828)}
+:root[data-theme="dark"] .rc:not(:disabled):hover,:root[data-theme="dark"] .rc.on{background:var(--ink);color:var(--bg)}
+#ckb input[type=range]{width:100%}#ckb textarea{background:var(--bg);color:var(--ink);border:1px solid var(--ln)}.rc.on small{color:var(--bg)}
+#sginfo,#qinfo{display:none;border:1px solid var(--ink);padding:6px 8px;margin:6px 0;font-size:12px;line-height:1.45;max-height:300px;overflow-y:auto}#sginfo.on,#qinfo.on{display:block}
+.ib{width:18px;height:18px;padding:0;border-radius:50%;border:1.5px solid var(--ink);background:var(--bg);color:var(--ink);font:italic bold 12px Georgia,serif;line-height:1;margin-left:8px;vertical-align:1px;cursor:pointer}
+.ib.big{width:24px;height:24px;font-size:14px;margin-left:12px;vertical-align:4px;font-style:normal}
+#sx{font-size:10px;letter-spacing:-.5px;margin-left:6px}#st{margin-left:6px}
+.ib:hover,.ib.on{background:var(--ink);color:var(--bg)}
+.qc{display:inline-block;width:16px;height:24px;line-height:24px;text-align:center;border:1px solid var(--ink);font:12px "Courier New",monospace;margin:0 2px 4px 0;background:var(--bg);color:var(--ink)}
+.qc.off{border-color:var(--ln);color:var(--ln)}
+#qreg{margin:8px 0 4px}
+#qreg.go .qc:not(.off){animation:qcol .8s ease-out}
+@keyframes qcol{0%{background:var(--ink);color:var(--bg)}100%{background:var(--bg);color:var(--ink)}}
+#qhw{background:var(--bg);color:var(--ink);font:12px/1.55 "Courier New",monospace;padding:6px 8px;margin:6px 0 10px;border:1px solid var(--ln);white-space:pre;overflow-x:auto}
+@media (prefers-reduced-motion:reduce){#qreg.go .qc{animation:none}}
+#ckm{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:30}#ckm.on{display:flex}
+#ckb{background:var(--bg);color:var(--ink);border:2px solid var(--ink);border-radius:6px;padding:14px 16px;max-width:430px;width:100%;max-height:90vh;overflow:auto;font-size:13px}
+#ckb h3{margin:0 0 8px;font-size:16px}#ckb pre{margin:6px 0;padding:6px 8px;border:1px solid var(--ln);font:12px/1.5 "Courier New",monospace;white-space:pre-wrap}
+#ckb textarea{width:100%;box-sizing:border-box;font:11px "Courier New",monospace;margin:8px 0 4px}#ckb .g{margin:8px 0}
+#sgmenu{display:none;border-left:2px solid var(--ink);margin:0 0 8px 6px;padding-left:8px}#sgmenu.on{display:block}
+.info{display:none;border:1px solid var(--ink);padding:6px 8px;margin:6px 0;font-size:12px;line-height:1.45;max-height:300px;overflow-y:auto}.info.on{display:block}
+.pm{border-collapse:collapse;font-size:12px;margin:6px 0}.pm td{border:1px solid var(--ink);padding:2px 7px;text-align:center}
+.more{font-size:12px;color:var(--mut);margin:4px 0}
+section{display:none}section.on{display:block}
+.g{margin:10px 0}
+button{font:13px Arial,sans-serif;cursor:pointer}button:disabled{cursor:default}
+button:not(.ib):not(.rc){background:linear-gradient(to bottom,#e3e3e3 0%,#d0d0d0 50%,#b8b8b8 100%);color:#111;border:1px solid #666;border-radius:4px;padding:2px 9px;text-shadow:0 1px 0 rgba(255,255,255,.4)}
+button:not(.ib):not(.rc):hover:not(:disabled){background:linear-gradient(to bottom,#ebebeb 0%,#d9d9d9 50%,#c2c2c2 100%);border-color:#4d4d4d}
+button:not(.ib):not(.rc):active:not(:disabled){background:linear-gradient(to bottom,#a6a6a6,#bebebe);box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
+button:not(.ib):not(.rc):disabled{background:linear-gradient(to bottom,#e7e7e7,#dedede);color:#7a7a7a;border-color:#bcbcbc;text-shadow:none}
+.bar{height:8px;border:1px solid var(--ln);margin:4px 0}.bar i{display:block;height:100%;background:var(--ink)}
+.lock{border:1px dashed var(--ln);padding:8px;margin:8px 0;font-size:14px}
+.ok{color:var(--mut)}
+</style></head><body>
+<div id="app"><div id="con"><div id="log" aria-live="polite"></div><div id="cmd"><div id="sug" role="listbox"></div><span class="ps">tacks:~$</span><input id="ci" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Console command" placeholder="type a command"></div></div>
+<div class="w">
+<h1>Thumbtacks: <span id="hLife">0</span><button id="mu" class="ib big" aria-pressed="false" aria-label="Toggle background music" title="Music starts on your first click">&#9834;</button><button id="sx" class="ib big" aria-pressed="true" aria-label="Toggle sound effects" title="Sound effects on">fx</button><button id="st" class="ib big" aria-label="Settings" title="Settings">&#9881;</button></h1></div>
+<div id="cols">
+
+<section id="p_workbench"></section><section id="p_sales"></section><section id="p_materials"></section><section id="p_manufacturing"></section><section id="p_factory"></section><section id="p_floor"></section><section id="p_computing"></section><section id="p_research"></section><section id="p_quantum"></section><section id="p_market"></section><section id="p_strategy"></section>
+</div></div>
+<div id="ckm"><div id="ckb"></div></div>
+<script>
+let SCALE=1;
+const setH=(e,h)=>{if(e._h!==h){e._h=h;e.innerHTML=h}},$=id=>document.getElementById(id),SU=['','K','M','B','T'];
+const big=n=>n>=1e14?'∞':Math.floor(n).toLocaleString();
+const F=(n,d=1)=>{if(n>=1e14)return'∞';if(n<1000)return Number.isInteger(n)?''+n:n.toFixed(d);let i=0;while(n>=1000&&i<4){n/=1000;i++}return n.toFixed(n<10?2:1)+SU[i]};
+const M=n=>'$ '+(n<1000?n.toFixed(2):F(n));
+const fresh=()=>({tacks:0,life:0,cash:0,presses:0,tool:0,cap:0,mkt:0,integ:100,cores:0,sticks:0,sockets:1,inf:{},pt:0,rp:{t:0,life:0,rev:0},cheat:false,qb:0,coh:100,nab:0,pay:'gov',qOn:false,qacc:0,qtot:0,qinfo:false,info:{},ins:0,op1:0,op2:0,sg:{sel:'random',unl:{random:1,hold:1,under:1},res:null,runs:0,wins:0},stk:{L:{},h:{},own:{},sel:'FRW',t:0,et:90,dv:30,mf:0,real:0,div:0},adv:0,ab:{on:false,ts:400,tp:200,pm:0,open:false,spent:0},gov:0,msi:0,sram:0,score:0,iter:0,iterLife:0,sold:0,rev:0,p:0.05,steel:2000,plastic:1000,bp:{s:0,p:0},ep:{s:0,p:0},sp:5,pp:8,mevT:150,auto:true,res:{},tip:{},u:{workbench:1,sales:1,materials:1}});
+let S=fresh();
+try{const t=localStorage.getItem('tti3');if(t)S=Object.assign(fresh(),JSON.parse(t))}catch(e){}
+S.u.sales=1;S.u.materials=1;
+const RES=[
+{id:'dies',n:'Hardened dies',cat:'Manufacturing',c:500,d:'Presses make 50% more tacks.'},
+{id:'mkt',n:'Market analytics',cat:'Commerce',c:800,d:'Demand is 40% higher.'},
+{id:'mem',n:'Memory paging',cat:'Computing',c:1200,d:'Iteration storage is 50% larger.'},
+{id:'autom',n:'Predictive maintenance',cat:'Manufacturing',c:1500,d:'Machines wear half as fast.',pre:'dies'},
+{id:'par',n:'Parallel pipelines',cat:'Computing',c:2500,a:40,d:'Iterations per second are 50% higher.',pre:'mkt'},
+{id:'steelx',n:'Efficient wire extruding',cat:'Materials',c:4000,a:60,d:'+25% steel from every purchase.'},
+{id:'plastx',n:'Precision molding',cat:'Materials',c:8000,a:150,d:'+25% plastic from every purchase.'},
+{id:'steelx2',n:'Continuous casting',cat:'Materials',c:12000,a:400,d:'Another +25% steel from every purchase.',pre:'steelx'},
+{id:'algo',n:'Algorithmic trading',cat:'Commerce',c:20000,a:1500,b:30,d:'Opens the Market, where you can invest your cash.',pre:'qc'},
+{id:'strat',n:'Strategic analysis',cat:'Commerce',c:25000,a:2000,b:60,d:'Opens Strategic Analysis: simulate price wars to earn Insight.',pre:'algo'},
+{id:'qc',n:'Quantum computing',cat:'Computing',c:18000,a:1500,d:'Opens Quantum Computing, which turns advanced computations into Gov. Support.',pre:'par'},
+{id:'maint2',n:'Self-diagnosing presses',cat:'Manufacturing',c:2200,d:'Maintenance costs half as much.',pre:'autom'},
+{id:'cache',n:'Instruction caching',cat:'Computing',c:2800,d:'Iterations per second are 25% higher.'},
+{id:'autobuy',n:'Automated purchasing',cat:'Materials',c:5500,a:250,d:'Unlocks the Auto Buyer, which restocks steel and plastic for you.'},
+{id:'tool2',n:'Quick-change tooling',cat:'Manufacturing',c:3000,a:80,d:'Tooling gives +35% output per level instead of +25%.',pre:'dies'},
+{id:'brand',n:'Brand loyalty',cat:'Commerce',c:4000,a:150,d:'Customer demand is 25% higher.',pre:'mkt'},
+{id:'floor2',n:'Compact layouts',cat:'Factory',c:5000,a:200,d:'Each floor space upgrade adds 7 tiles instead of 5.'},
+{id:'recy',n:'Scrap recycling',cat:'Materials',c:6000,a:300,d:'Each tack uses 20% less steel and plastic.'},
+{id:'quant',n:'Quantized threads',cat:'Computing',c:6500,d:'Advanced computations build twice as fast.'},
+{id:'bulk',n:'Bulk contracts',cat:'Materials',c:7000,a:350,d:'Steel and plastic cost 15% less.'},
+{id:'abuy2',n:'Smart purchasing',cat:'Materials',c:9000,a:600,d:'The auto buyer buys 5 kg at a time.',pre:'autobuy'},
+{id:'cool',n:'Liquid cooling',cat:'Computing',c:10000,a:800,d:'Super RAM adds 12 iterations per second instead of 8.',pre:'cache'},
+{id:'lobby',n:'Lobbying',cat:'Commerce',c:12000,a:900,d:'Each milestone grants double the Gov. Support.'},
+{id:'mkt5',n:'Market makers',cat:'Market',c:34000,a:2600,b:120,d:'Good news is more likely than bad news for stocks.',pre:'mkt3'},
+{id:'str5',n:'Competitor intelligence',cat:'Analysis',c:38000,a:3400,b:200,d:'Tournaments earn 5 extra Insight.',pre:'str3'},
+{id:'qec',n:'Error correction',cat:'Quantum',c:21000,a:1600,b:40,d:'Coherence drains 40% slower.',pre:'qc'},
+{id:'qrate',n:'Faster gates',cat:'Quantum',c:22000,a:1700,b:60,d:'The quantum core runs 40% faster.',pre:'qc'},
+{id:'qeff',n:'Better qubit design',cat:'Quantum',c:23000,a:1800,b:80,d:'Qubits cost 25% less.',pre:'qc'},
+{id:'qyield',n:'Quantum sampling',cat:'Quantum',c:24000,a:1900,b:100,d:'The core makes 50% more bits.',pre:'qec'},
+{id:'qpar',n:'Parallel registers',cat:'Quantum',c:26000,a:2000,b:150,d:'Conversion needs 20% less adv. comp. per Gov. Support.',pre:'qrate'},
+{id:'qdamp',n:'Decoherence damping',cat:'Quantum',c:28000,a:2200,b:200,d:'Coherence drains 30% slower.',pre:'qeff'},
+{id:'mkt1',n:'Low-latency trading',cat:'Market',c:22000,a:1500,b:40,d:'Trading fees are halved, from 0.5% to 0.25%.',pre:'algo'},
+{id:'mkt2',n:'Dividend programs',cat:'Market',c:24000,a:1800,b:40,d:'Dividends pay 50% more.',pre:'algo'},
+{id:'mkt3',n:'Market forecasting',cat:'Market',c:28000,a:2200,b:70,d:'Each stock shows a buy, hold or sell signal.',pre:'mkt1'},
+{id:'mkt4',n:'Hedging models',cat:'Market',c:30000,a:2500,b:70,d:'Stock volatility is 30% lower.',pre:'mkt2'},
+{id:'str1',n:'Game theory models',cat:'Analysis',c:30000,a:2500,b:70,d:'Tournaments cost 1,500 iterations instead of 2,500.',pre:'strat'},
+{id:'str2',n:'Reinforcement learning',cat:'Analysis',c:32000,a:2800,b:100,d:'Tournaments earn 25% more Insight.',pre:'str1'},
+{id:'str3',n:'Strategy synthesis',cat:'Analysis',c:34000,a:3000,b:100,d:'Adds a ninth strategy, Adaptive, that you can unlock.',pre:'strat'},
+{id:'str4',n:'Optimization suite',cat:'Analysis',c:36000,a:3200,b:150,d:'Optimizations give 15% per level instead of 10%.',pre:'str2'},
+{id:'plastx2',n:'Injection tooling',cat:'Materials',c:16000,a:800,d:'Another +25% plastic from every purchase.',pre:'plastx'}];
+const nres=()=>Object.keys(S.res).length;
+const capN=()=>15+(S.res.floor2?7:5)*S.cap,useS=()=>S.res.recy?1.6:2,useP=()=>S.res.recy?.8:1,disc=()=>S.res.bulk?.85:1,maxSock=()=>Math.max(1,Math.floor((capN()-S.presses)/3)),used=()=>S.presses+(S.u.computing?3*S.sockets:0),iterCap=()=>S.inf.iter?1e15:(400*S.cores+1500*S.score)*(S.res.mem?1.5:1),ys=()=>1+(S.res.steelx?.25:0)+(S.res.steelx2?.25:0),yp=()=>1+(S.res.plastx?.25:0)+(S.res.plastx2?.25:0),eff=()=>S.u.factory?.5+.5*S.integ/100:1;
+const prod=()=>S.presses*(1+(S.res.tool2?.35:.25)*S.tool)*(S.res.dies?1.5:1)*(1+(S.res.str4?.15:.1)*S.op1)*eff();
+const dm=()=>2/(1+Math.pow(S.p/.05,1.5)),dem=()=>3*(1+.5*S.mkt)*(S.res.mkt?1.4:1)*(1+(S.res.str4?.15:.1)*S.op2)*(S.res.brand?1.25:1)*dm();
+const ips=()=>S.cores+S.score>0?(1+2*S.sticks+(S.res.cool?12:8)*S.sram)*(S.res.par?1.5:1)*(S.res.cache?1.25:1):0;
+const mp=()=>S.u.sales?S.p:.03;
+const C={mb1:()=>px(selCo())*(1+fee()),mb10:()=>px(selCo())*10*(1+fee()),score:()=>pc(3*Math.pow(1.2,S.score)),sram:()=>pc(2*Math.pow(1.2,S.sram)),socket:()=>250*Math.pow(2.2,S.sockets-1),s1:()=>S.sp*disc(),p1:()=>S.pp*disc(),press:()=>4*Math.pow(1.13,S.presses),tool:()=>25*Math.pow(1.9,S.tool),cap:()=>60*Math.pow(1.8,S.cap),mkt:()=>30*Math.pow(1.8,S.mkt),maint:()=>(8+S.presses*1.5)*(S.res.maint2?.5:1),core:()=>pc(1*Math.pow(1.12,S.cores)),stick:()=>pc(1*Math.pow(1.12,S.sticks))};
+const A={make:{ok:()=>S.steel>=useS()&&S.plastic>=useP(),f:()=>{S.steel-=useS();S.plastic-=useP();S.tacks++;S.life++}},
+s1:{cur:'cash',f:()=>{S.steel+=1000*ys();S.bp.s=Math.min(.5,S.bp.s+.01)}},p1:{cur:'cash',f:()=>{S.plastic+=1000*yp();S.bp.p=Math.min(.5,S.bp.p+.01)}},
+sell:{ok:()=>S.tacks>=1,f:()=>{const n=Math.floor(S.tacks);S.tacks-=n;S.cash+=n*mp();S.rev+=n*mp();S.sold+=n}},
+lower:{ok:()=>S.p>.011,f:()=>S.p=Math.max(.01,Math.min(S.p-.01,Math.round(S.p/1.1*100)/100))},raise:{ok:()=>S.p<999,f:()=>S.p=Math.min(1000,Math.max(S.p+.01,Math.round(S.p*1.1*100)/100))},
+press:{cur:'cash',ok:()=>used()+1<=capN(),f:()=>S.presses++},tool:{cur:'cash',f:()=>S.tool++},cap:{cur:'cash',f:()=>S.cap++},mkt:{cur:'cash',f:()=>S.mkt++},
+maint:{cur:'cash',ok:()=>S.integ<99,f:()=>S.integ=100},socket:{cur:'cash',ok:()=>used()+3<=capN(),f:()=>S.sockets++},core:{get cur(){return S.pay==='cash'?'cash':'gov'},ok:()=>S.cores+S.score<4*S.sockets,f:()=>S.cores++},stick:{get cur(){return S.pay==='cash'?'cash':'gov'},ok:()=>S.sticks+S.sram<4*S.sockets,f:()=>S.sticks++},score:{get cur(){return S.pay==='cash'?'cash':'gov'},ok:()=>S.cores+S.score<4*S.sockets,f:()=>S.score++},sram:{get cur(){return S.pay==='cash'?'cash':'gov'},ok:()=>S.sticks+S.sram<4*S.sockets,f:()=>S.sram++},
+mb1:{cur:'cash',f:()=>trade(1)},mb10:{cur:'cash',f:()=>trade(10)},ms1:{ok:()=>owned()>=1,f:()=>sell(1)},msall:{ok:()=>owned()>=1,f:()=>sell(owned())},
+tsd:{ok:()=>S.ab.ts>0,f:()=>S.ab.ts-=100},tsu:{ok:()=>S.ab.ts<5000,f:()=>S.ab.ts+=100},tpd:{ok:()=>S.ab.tp>0,f:()=>S.ab.tp-=100},tpu:{ok:()=>S.ab.tp<5000,f:()=>S.ab.tp+=100},abon:{f:()=>S.ab.on=!S.ab.on},abset:{f:()=>S.ab.open=!S.ab.open},abpm:{f:()=>S.ab.pm=(S.ab.pm+1)%3},
+reset:{f:()=>{const b=document.querySelector('[data-a="reset"]');if(!resetArm){resetArm=1;b.textContent='Click again to confirm';setTimeout(()=>{resetArm=0;b.textContent='Reset save'},4000);return}resetArm=0;b.textContent='Reset save';S=fresh();pv.s=5;pv.p=8;try{localStorage.removeItem('tti3')}catch(e){}ckClear();log('Save erased. Starting over.')}}};
+const C2={},C3={};RES.forEach(r=>{C2['r'+r.id]=()=>r.a||0;C3['r'+r.id]=()=>r.b||0;A['r'+r.id]={cur:'iter',cur2:r.a?'adv':null,cur3:r.b?'nab':null,ok:()=>!S.res[r.id]&&(!r.pre||S.res[r.pre]),f:()=>{S.res[r.id]=1;log('Research complete: '+r.n+'. '+r.d)}};C['r'+r.id]=()=>r.c});
+const L=[];let resetArm=0;
+function draw(f){const v=L.slice(-5);$('log').innerHTML=v.map((t,i)=>`<div class="${f&&i===v.length-1?'nl':''}" style="opacity:${.3+.7*(i+1)/v.length}">&gt; ${t}</div>`).join('')}
+function log(m){L.push(m);if(L.length>60)L.shift();draw(1)}
+const tip=(k,c,m)=>{if(!S.tip[k]&&c){S.tip[k]=1;log(m)}};
+function act(a){const x=A[a],c=C[a]?C[a]():0,c2=x.cur2?C2[a]():0,c3=x.cur3?C3[a]():0;if(x.ok&&!x.ok())return;if(x.cur&&S[x.cur]<c)return;if(x.cur2&&S[x.cur2]<c2)return;if(x.cur3&&S[x.cur3]<c3)return;if(x.cur)S[x.cur]-=c;if(x.cur2)S[x.cur2]-=c2;if(x.cur3)S[x.cur3]-=c3;x.f();sfxFor(a,c);upd()}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b&&!b.disabled)act(b.dataset.a)});
+const P=(a,la,b,lb)=>`<div class="g"><button data-a="${a}">${la}</button> <button data-a="${b}">${lb}</button> <span id="l_${a}"></span><br>Cost: <span id="c_${a}"></span> / <span id="c_${b}"></span></div>`;
+const B=(a,l,cost)=>`<div class="g"><button data-a="${a}">${l}</button> <span id="l_${a}"></span>${cost?`<br>Cost: <span id="c_${a}"></span>`:''}</div>`;
+$('p_workbench').innerHTML=B('make','Make Thumbtack')+'<div id="fbox"><div class="itn"><b id="fv">$ 0.00</b> <span>available funds</span></div><div class="more" id="fr"></div></div><div id="gbox" style="display:none"><div class="itn"><b id="gv">0</b> <span>gov. support</span></div><div class="more" id="gr"></div></div><div id="s_wb"></div>'+'<div class="g"><button data-a="reset">Reset save</button></div>';
+$('p_sales').innerHTML='<h2>Business</h2><div id="s_sa"></div><div class="g"><button data-a="lower">lower</button> <button data-a="raise">raise</button> Price per Tack: <span id="priceV"></span></div><div id="s_sa2"></div>'+B('mkt','Marketing',1);
+$('p_materials').innerHTML='<h2>Raw Materials</h2><div id="s_mat"></div><div class="g"><button data-a="s1">Steel 1 kg</button><br>Cost: <span id="c_s1"></span></div><div class="g"><button data-a="p1">Plastic 1 kg</button><br>Cost: <span id="c_p1"></span></div><div id="abox"><h2 class="sub">Auto Buyer</h2><div class="g"><button data-a="abon" id="b_abon"></button> <button data-a="abset" id="b_abset">Settings</button><div class="more" id="abs"></div></div><div id="abp"><div class="ar">Steel: buy below <button data-a="tsd">-</button> <b id="v_ts"></b> <button data-a="tsu">+</button></div><div class="ar">Plastic: buy below <button data-a="tpd">-</button> <b id="v_tp"></b> <button data-a="tpu">+</button></div><div class="ar">Price limit: <button data-a="abpm" id="b_abpm"></button></div><div class="more" id="abx"></div></div></div>';
+$('p_manufacturing').innerHTML='<h2>Manufacturing</h2><div id="s_mf"></div>'+B('press','Press',1)+B('tool','Tooling',1);
+$('p_factory').innerHTML='<h2>Factory</h2><div id="s_fa"></div>'+B('maint','Maintain',1);
+$('p_floor').innerHTML='<h2>Floor Plan</h2><div id="fsvg"></div><div class="more">Each tile is one unit of floor space. Cubes are presses, taller with tooling stripes. A socket uses 3 tiles: cores, RAM and housing. Dark parts are super.</div>'+B('cap','Floor Space',1);
+$('p_research').innerHTML='<div id="rbox"><h2 class="sub">Research (spends iterations)</h2><div id="rList"></div><div id="rMore"></div></div>';
+$('p_computing').innerHTML='<h2>Computational Resources</h2><div id="itbox"><div class="itn"><b id="itv">0</b> <span id="itc"></span></div><div class="bar"><i id="itb" style="width:0"></i></div><div class="more" id="itr"></div><div class="more" id="iac"></div></div><div id="s_co"></div>'+B('socket','CPU Socket',1)+'<div class="g">Pay for cores and RAM with: <button data-a="paytog" id="b_pay"></button></div>'+P('core','CPU Core (2 threads)','score','Super Core (8 threads)')+P('stick','RAM Stick (4 GB)','sram','Super RAM (16 GB)');
+const UL=[
+{id:'manufacturing',name:'Basic Manufacturing',at:100,tease:'Your hands are the bottleneck.',msg:'Hand production has hit its limit. Mechanical presses are now worth building.',reqs:()=>[['100 thumbtacks',S.life>=100]]},
+{id:'factory',name:'Factory',at:1000,tease:'One bench is no longer enough.',msg:'You are managing a small factory. Machines wear out and floor space is limited.',reqs:()=>[['1,000 thumbtacks',S.life>=1000],['5 presses',S.presses>=5]]},
+{id:'computing',name:'Computing',at:5000,tease:'Your factory is beginning to exceed human management capacity.',msg:'Your factory has become too complex to manage by hand. Computing infrastructure is now economically viable.',reqs:()=>[['5,000 thumbtacks',S.life>=5000],['8 presses',S.presses>=8],['$ 150 cash',S.cash>=150]]},
+{id:'research',name:'Research',at:10000,tease:'Your factory needs organized research.',msg:'Computation can now be spent on long-term technology.',reqs:()=>[['10,000 thumbtacks',S.life>=10000],['2 CPU cores',S.cores+S.score>=2],['300 iterations generated',S.iterLife>=300]]}];
+const nextU=()=>UL.find(u=>!S.u[u.id]);
+const era=()=>S.life<1000?'Era I: Workshop':S.life<25000?'Era II: Factory':'Era III: Industrial';
+function check(){const u=nextU();if(u&&u.reqs().every(r=>r[1])){S.u[u.id]=1;log('NEW SYSTEM UNLOCKED: '+u.name.toUpperCase());sfx('unlock');setTimeout(()=>{const el=$('p_'+u.id);if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',inline:'nearest',block:'nearest'})},400);log(u.msg);const nx=nextU();if(nx)log('Next milestone: ???  '+F(nx.at,0)+' thumbtacks.')}}
+function tips(){const n=nextU();
+ tip('tq',S.u.quantum,'Tip: Quantum Computing turns advanced computations into Gov. Support. Turn the core on and add qubits to improve the ratio and speed.');
+ tip('tsg',S.u.strategy,'Tip: run tournaments in Strategic Analysis to earn Insight. Unlock better strategies and spend Insight on optimizations.');
+ tip('tm',S.life>=10,'Tip: each tack uses 2 g of steel and 1 g of plastic. Prices shift, so buy when they are low.');
+ if(S.steel<30&&!S.tip.ls){S.tip.ls=1;log('Tip: steel is running low. Buy more in Raw Materials'+(S.res.autobuy?', or turn on the Auto Buyer.':'.'))}if(S.steel>=200)S.tip.ls=0;
+ if(S.plastic<15&&!S.tip.lp){S.tip.lp=1;log('Tip: plastic is running low. Buy more in Raw Materials'+(S.res.autobuy?', or turn on the Auto Buyer.':'.'))}if(S.plastic>=100)S.tip.lp=0;
+  if(n&&S.life>=n.at*.5)tip('h'+n.id,1,'"'+n.tease+'"');
+ tip('t2',S.u.manufacturing&&S.cash>=C.press(),'Tip: you can afford a press. Presses make tacks on their own.');
+ tip('t0',S.u.sales,'Tip: customers buy in waves, so stock builds up between them. Use lower and raise to set your price.');
+ tip('t3',S.u.sales&&S.tacks>150&&dem()<prod()*.8,'Tip: unsold stock is piling up. Lower the price to raise demand.');
+ tip('t4',S.u.factory&&S.integ<60,'Tip: your machines are wearing down. Maintain them to restore efficiency.');
+ tip('t5',S.u.computing&&S.cores+S.score>0&&S.sticks+S.sram===0,'Tip: RAM raises your iteration rate. Install sticks to speed things up.');
+ tip('tmk',S.u.market,'Tip: the Market is open. Invest spare cash and watch the graph. Steel and plastic prices move Ferrum Works and Polymere Dynamics.');
+ tip('t6',S.u.research&&S.iter>=500,'Research projects are listed under Computational Resources.');
+ if(S.u.computing&&S.sticks>0&&S.iter>=iterCap()-1&&!S.tip.if){S.tip.if=1;log('Tip: iteration storage is full. Spend iterations on research or add cores.')}if(S.iter<iterCap()*.7)S.tip.if=0}
+const stat=a=>a.map(x=>x[0]+': '+x[1]).join('<br>');
+function upd(){
+ if(!S.stk.h.FRW||!S.stk.h.FRW.length)stkInit();
+ S.sockets=Math.min(Math.max(1,S.sockets),maxSock());{const mx=4*S.sockets;S.score=Math.min(S.score,mx);S.cores=Math.min(S.cores,mx-S.score);S.sram=Math.min(S.sram,mx);S.sticks=Math.min(S.sticks,mx-S.sram)}S.iter=Math.min(S.iter,iterCap());
+ const Li=Math.floor(S.life);
+ $('hLife').textContent=big(Li);
+
+ S.u.market=S.res.algo?1:0;S.u.strategy=S.res.strat?1:0;S.u.quantum=S.res.qc?1:0;
+ {let val=0,inv=0;CO.forEach(c=>{const h=S.stk.h[c.id],p=px(c),ch=(p/h[0]-1)*100,o=S.stk.own[c.id];if(o&&o.n){val+=o.n*p;inv+=o.cost}$('mp_'+c.id).textContent=M(p);$('ms_'+c.id).textContent=(ch>=0?'+':'')+ch.toFixed(1)+'% in 5 min'+sig(c,p)+(o&&o.n?'  |  you own '+o.n:'');$('mc_'+c.id).classList.toggle('on',S.stk.sel===c.id)});
+  const ur=val-inv,sc=selCo(),so=S.stk.own[sc.id];$('pv').textContent=M(val);$('pl').textContent='Invested '+M(inv)+', unrealised '+(ur<0?'-':'+')+M(Math.abs(ur))+'. Dividends '+M(S.stk.div)+'. Net worth '+M(S.cash+val)+'.';
+  setH($('mg'),graphSvg());$('mtx').textContent='Selected: '+sc.n+'. A '+(fee()*100)+'% fee applies to every trade. '+(so&&so.n?'You own '+so.n+' at an average of '+M(so.cost/so.n)+'.':'You own none.')}
+ stratUI();qUI();infoUI();
+ S.u.floor=S.u.manufacturing?1:0;setH($('fsvg'),floorSvg());
+ document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',!!S.u[s.id.slice(2)]));
+ const ropen=RES.filter(r=>!S.res[r.id]&&(!r.pre||S.res[r.pre])&&r.c<=iterCap()).sort((x,y)=>x.c-y.c).slice(0,4),rhid=RES.filter(r=>!S.res[r.id]&&!ropen.includes(r)).length;
+ $('rbox').style.display=S.u.research?'':'none';$('abox').style.display=S.res.autobuy?'':'none';
+ setH($('rList'),ropen.map(r=>`<button class="rc" data-a="r${r.id}"><b>${r.n}</b><span>${F(r.c,0)} iter${r.a?' + '+r.a+' adv. comp.':''}${r.b?' + '+r.b+' bits':''}</span><small>${r.cat}: ${r.d}</small></button>`).join('')||'<div class="more">No projects available right now.</div>');
+ setH($('rMore'),rhid?`<div class="more">${rhid} more project${rhid>1?'s':''} will appear as iteration storage grows and slots free up.</div>`:'');
+ for(const a in A){const b=document.querySelector(`[data-a="${a}"]`);if(!b)continue;const c=C[a]?C[a]():0,x=A[a],cs=$('c_'+a);if(cs)cs.textContent=x.cur==='gov'?c+' gov. support':x.cur==='ins'?c+' insight':x.cur==='iter'?F(c,0)+' iterations':M(c);b.disabled=!!((x.cur&&S[x.cur]<c)||(x.cur2&&S[x.cur2]<C2[a]())||(x.cur3&&S[x.cur3]<C3[a]())||(x.ok&&!x.ok()))}
+ $('s_wb').innerHTML=stat([['Unsold Inventory',F(Math.floor(S.tacks),0)],['Play Time',fmtT(S.pt)]].concat(BEST[1000]?[['Fastest 1,000 tacks',fmtT(BEST[1000])]]:[],BEST[10000]?[['Fastest 10,000 tacks',fmtT(BEST[10000])]]:[],BEST[100000]?[['Fastest 100,000 tacks',fmtT(BEST[100000])]]:[]));
+ $('s_sa').innerHTML=stat([['Unsold Inventory',F(Math.floor(S.tacks),0)]]);
+ $('gbox').style.display=S.u.computing&&S.msi>0?'':'none';$('gv').textContent=S.gov;$('gr').textContent=MS[S.msi]?'Next grant at '+MS[S.msi].toLocaleString()+' thumbtacks':'No more grants';
+ $('fv').textContent=M(S.cash);$('fr').textContent='about '+M(Math.min(dem(),prod())*S.p)+' per second at your price';
+ $('priceV').textContent=M(S.p);
+ $('s_sa2').innerHTML=stat([['Public Demand',(()=>{const d=dem()/3*100;return (d<10?d.toFixed(2):d<1000?Math.round(d):F(d))+'%'})()],['Customer Demand',F(dem(),2)+' tacks/s'],['Customers Waiting',F(Math.floor(orders),0)+' tacks'],['Next Customer Wave','in about '+Math.max(0,Math.ceil(waveT))+' s']]);
+ const g=x=>x>=1e14?'∞':x<1000?Math.floor(x)+' g':(x/1000).toFixed(2)+' kg';
+ $('s_mat').innerHTML=stat([['Steel in Stock',g(S.steel)],['Steel Price per kg',ar.s+M(S.sp)],['Plastic in Stock',g(S.plastic)],['Plastic Price per kg',ar.p+M(S.pp)],['Steel Yield','+'+Math.round((ys()-1)*100)+'% per purchase'],['Plastic Yield','+'+Math.round((yp()-1)*100)+'% per purchase'],['Each Tack Uses',useS()+' g steel, '+useP()+' g plastic'],['Price Drivers','market waves, public demand, your own buying']]);
+ $('l_make').textContent=A.make.ok()?'':'Need steel and plastic';
+ $('l_mkt').textContent='Level: '+S.mkt;
+ $('s_mf').innerHTML=stat([['Tacks per Second',F(prod(),2)+(starved?' (waiting for materials)':'')]]);
+ $('l_press').textContent=S.presses+' (floor '+used()+' / '+capN()+')';$('l_tool').textContent='Level: '+S.tool;
+ $('s_fa').innerHTML=stat([['Machine Integrity',S.integ.toFixed(0)+'%'],['Efficiency',(eff()*100).toFixed(0)+'%'],['Floor Space Used',used()+' / '+capN()]]);
+ $('l_cap').textContent='Level: '+S.cap+' (+'+(S.res.floor2?7:5)+' floor space)';
+ $('s_co').innerHTML=stat([['Floor Space Used',used()+' / '+capN()+' (socket = 3, press = 1)'],['CPU Sockets',S.sockets+' / '+maxSock()+' (4 cores each, 3 floor each)'],['Cores',(S.cores+S.score)+' / '+4*S.sockets+' ('+S.score+' super)'],['Threads',2*S.cores+8*S.score],['RAM Sticks',(S.sticks+S.sram)+' / '+4*S.sockets+' ('+S.sram+' super)'],['Memory',(4*S.sticks+16*S.sram)+' GB'],['RAM Speed','+'+(2*S.sticks+(S.res.cool?12:8)*S.sram)+' iterations/s (base 1)'],['Iteration Storage',F(iterCap(),0)+' (400 per core, 1,500 per super)']]);
+ $('iac').textContent='Advanced computations: '+(S.adv>=1e14?'∞':S.adv.toFixed(1))+' (+'+advRate().toFixed(2)+'/s from threads)';
+ $('b_abon').textContent='Auto Buyer: '+(S.ab.on?'ON':'OFF');$('abp').style.display=S.ab.open?'block':'none';$('b_abset').textContent=S.ab.open?'Hide settings':'Settings';
+ $('v_ts').textContent=S.ab.ts+' g';$('v_tp').textContent=S.ab.tp+' g';$('b_abpm').textContent=['Any price','Below 1.2x average','Below average'][S.ab.pm];
+ $('abs').textContent=S.ab.on?(abLast||'Watching your stock.'):'Off. Restocks steel and plastic when they run low.';$('abx').textContent='Spent so far: '+M(S.ab.spent)+'. A limit of 0 g buys only when stock is dry.';
+ $('itv').textContent=big(S.iter);$('itc').textContent='/ '+F(iterCap(),0)+' iterations';$('itb').style.width=Math.min(100,S.iter/iterCap()*100)+'%';$('itr').textContent=S.iter>=iterCap()-1?'Storage full. Spend iterations or add cores.':'+'+ips().toFixed(1)+' per second';
+ $('b_pay').textContent=S.pay==='cash'?'Cash (very expensive)':'Gov. Support';$('l_socket').textContent=S.sockets+' / '+maxSock();
+ $('l_core').textContent=(S.cores+S.score)+' / '+4*S.sockets;$('l_stick').textContent=(S.sticks+S.sram)+' / '+4*S.sockets;
+}
+function fit(){const c=$('cols');let mh=0;c.querySelectorAll('section.on').forEach(s=>{mh=Math.max(mh,s.offsetHeight)});const h=Math.round(Math.max(260,mh,(innerHeight-(c.getBoundingClientRect().top+scrollY)-14)/SCALE));if(c._fh!==h){c._fh=h;c.style.height=h+'px'}}
+addEventListener('resize',fit);if(window.ResizeObserver)new ResizeObserver(()=>requestAnimationFrame(fit)).observe($('con'));fit();
+const MS=[];for(let e=2;e<=12;e++)for(const m of[1,2.5,5])MS.push(m*Math.pow(10,e));
+let BEST={};try{BEST=JSON.parse(localStorage.getItem('tti_best')||'{}')}catch(e){}
+const saveBest=()=>{try{localStorage.setItem('tti_best',JSON.stringify(BEST))}catch(e){}};
+const fmtT=x=>{x=Math.floor(x);const h=Math.floor(x/3600),m=Math.floor(x%3600/60),r=x%60,z=v=>String(v).padStart(2,'0');return h?h+':'+z(m)+':'+z(r):m+':'+z(r)};
+const LMK=[[100,'longer than a football pitch'],[324,'taller than the Eiffel Tower'],[8849,'higher than Mount Everest'],[42195,'longer than a marathon'],[1.2e6,'longer than Italy'],[4e7,'enough to circle the Earth'],[3.84e8,'enough to reach the Moon'],[1.5e11,'enough to reach the Sun']];
+function fact(n){const len=n*.012,kg=n*.003;if(len<100)return null;let e=LMK[0];for(const x of LMK)if(len>=x[0])e=x;
+ const fl=len<1000?Math.round(len)+' m':F(len/1000,0)+' km',fm=kg<1000?F(Math.round(kg),0)+' kg':F(kg/1000,0)+' tonnes';
+ return 'Fun fact: laid end to end, '+n.toLocaleString()+' tacks stretch '+fl+', '+e[1]+'. They weigh '+fm+'.'}
+function report(){if(S.pt-S.rp.t>=120){const dl=S.life-S.rp.life,dr=S.rev-S.rp.rev,m=(S.pt-S.rp.t)/60;if(dl>=1)log('Report: '+F(Math.floor(dl),0)+' tacks in '+Math.round(m)+' minutes ('+F(Math.round(dl/m),0)+' per minute), '+M(Math.max(0,dr))+' in sales.');S.rp={t:S.pt,life:S.life,rev:S.rev}}}
+const NEWS=['A viral post claims pushpins are better. Thumbtack fans are furious.','Analysts say the thumbtack market is pointed in the right direction.','A bulletin board in Ohio now holds 4,000 tacks. Locals call it art.','Study: nine out of ten corkboards prefer thumbtacks.','The steel union demands better snacks.','Local cat steps on a thumbtack and files a complaint.','A rival pushpin factory is accused of using inferior pins.','Experts warn of a global corkboard shortage.','Your factory appears on a list of the sharpest businesses.','The poster industry reports record demand for tacks.','An insurer launches tack-in-the-foot coverage.','The mayor proposes a thumbtack monument. Residents debate the pointy design.'];
+const ADV=[[()=>true,'Material prices move in slow waves. Buy when they dip to save money.'],[()=>true,'Lower prices raise demand. The best price is where demand just matches your production.'],[()=>S.res.autobuy,'Set the Auto Buyer price limit to Below average to avoid buying at peaks.'],[()=>S.u.manufacturing,'Tooling upgrades boost every press at once, so they pay off as you add presses.'],[()=>S.u.factory,'Worn machines run slower. Maintain them before integrity drops below 60%.'],[()=>S.u.computing,'Floor space is shared. A CPU socket takes the room of three presses.'],[()=>S.u.computing,'Cores raise iteration storage, while RAM raises how fast you fill it.'],[()=>S.u.research,'The research list shows 4 projects at a time. Buying cheap ones opens room for pricier ones.'],[()=>S.u.computing&&S.gov>0,'Gov. Support is your main currency for cores and RAM. If storage is your bottleneck, buy Super Cores first.'],[()=>S.u.market,'Stocks drift back toward their average. Buying below the 5-minute average tends to work better.'],[()=>S.u.strategy,'Strategies that retaliate and forgive, like Tit for tat, usually score best over many matches.'],[()=>Object.keys(BEST).length>0,'Records are kept between runs. Reset and try to beat your fastest time to a milestone.'],[()=>S.u.quantum,'Numeric analysis bits come from running the quantum core. Keep coherence high to make more of them.']];
+let advT=90,newsT=200,lastAdv=-1;
+function advisor(dt){advT-=dt;if(advT<=0){advT=100+Math.random()*60;const ok=ADV.map((x,i)=>x[0]()?i:-1).filter(i=>i>=0&&i!==lastAdv);if(ok.length){lastAdv=ok[Math.floor(Math.random()*ok.length)];log('Tip: '+ADV[lastAdv][1])}}
+ newsT-=dt;if(newsT<=0){newsT=180+Math.random()*120;log('News: '+NEWS[Math.floor(Math.random()*NEWS.length)])}}
+function milestones(){let k=0,lastm=0,rec='';while(S.msi<MS.length&&S.life>=MS[S.msi]){const ms=MS[S.msi];lastm=ms;S.msi++;S.gov+=GOVU*(S.res.lobby?2:1);k++;rec='';
+  if(!S.cheat){const b=BEST[ms];if(b==null)BEST[ms]=S.pt;else if(S.pt<b){rec=' New record! The previous best was '+fmtT(b)+'.';BEST[ms]=S.pt}else rec=' Your best is '+fmtT(b)+'.';saveBest()}}
+ if(k>0)sfx('chime');
+ if(k===1){log('Milestone: '+lastm.toLocaleString()+' thumbtacks in '+fmtT(S.pt)+'.'+(S.u.computing?' +'+GOVU*(S.res.lobby?2:1)+' Gov. Support.':'')+rec);const f=fact(lastm);if(f)log(f)}else if(k>1)log('Milestones reached: '+k+(S.u.computing?'. +'+k*GOVU*(S.res.lobby?2:1)+' Gov. Support':''));
+ tip('tg',S.u.computing&&S.gov+S.sram+S.score>0,'Tip: Gov. Support is the main currency for cores and RAM in Computing. You can pay with cash instead, but it costs far more.')}
+
+const advRate=()=>S.cores+S.score>0?(2*S.cores+8*S.score)*.05*(S.res.quant?2:1):0;let abLast='';
+function autoBuy(){const a=S.ab;if(!a.on||!S.res.autobuy)return;const kg=S.res.abuy2?5:1;
+ for(const k of['s','p']){const nm=k==='s'?'steel':'plastic',stock=k==='s'?S.steel:S.plastic,th=Math.max(k==='s'?a.ts:a.tp,5),pr=S[k+'p']*disc();if(stock>=th)continue;
+  const lim=a.pm===1?BASE[k]*1.2:a.pm===2?BASE[k]:1e9;
+  if(S[k+'p']>lim){abLast='Waiting for a lower '+nm+' price.';continue}
+  if(S.cash<pr*kg){abLast='Waiting for funds to buy '+nm+'.';continue}
+  S.cash-=pr*kg;a.spent+=pr*kg;if(k==='s'){S.steel+=1000*kg*ys();S.bp.s=Math.min(.5,S.bp.s+.01*kg)}else{S.plastic+=1000*kg*yp();S.bp.p=Math.min(.5,S.bp.p+.01*kg)}
+  abLast='Last: bought '+kg+' kg of '+nm+' at '+M(pr)+' per kg.'}}
+function floorSvg(){
+ const N=capN(),cols=Math.ceil(Math.sqrt(N)),rows=Math.ceil(N/cols),W=335,tw=Math.min(46,300/((cols+rows)/2)),th=tw/2,sc=tw/46,ox=W/2-(cols-rows)*tw/4,oy=38*sc+8;
+ const pos=i=>{const r=Math.floor(i/cols),c=i%cols;return{r,c,X:ox+(c-r)*tw/2,Y:oy+(c+r)*th/2}};
+ const pt=(p,u,v)=>[p.X+(u-v)*tw/2,p.Y+(u+v)*th/2];
+ const kind=new Array(N).fill(null),SK=S.u.computing?S.sockets:0;
+ for(let i=0;i<S.presses&&i<N;i++)kind[i]={t:'p'};
+ const cores=[...Array(S.score).fill(1),...Array(S.cores).fill(0)],rams=[...Array(S.sram).fill(1),...Array(S.sticks).fill(0)];
+ for(let j=0;j<SK;j++){const base=N-1-3*j;[['c',cores.slice(4*j,4*j+4)],['m',rams.slice(4*j,4*j+4)],['h',[]]].forEach(([t,a],k)=>{const i=base-k;if(i>=0&&!kind[i])kind[i]={t,a}})}
+ const q=a=>a.map(z=>z[0].toFixed(1)+','+z[1].toFixed(1)).join(' ');
+ const box=(x,y,du,dv,h,ft,fl,fr)=>{h*=sc;const e1=[du*tw/2,du*th/2],e2=[-dv*tw/2,dv*th/2],T=[x,y],R=[x+e1[0],y+e1[1]],L=[x+e2[0],y+e2[1]],B=[x+e1[0]+e2[0],y+e1[1]+e2[1]],u=z=>[z[0],z[1]-h],pl=(a,f)=>`<polygon points="${q(a)}" fill="${f}"/>`;
+  return pl([L,B,u(B),u(L)],fl)+pl([B,R,u(R),u(B)],fr)+pl([u(T),u(R),u(B),u(L)],ft)};
+ let floor='',obj=[];
+ for(let i=0;i<N;i++){const p=pos(i);floor+=`<polygon points="${q([[p.X,p.Y],[p.X+tw/2,p.Y+th/2],[p.X,p.Y+th],[p.X-tw/2,p.Y+th/2]])}"/>`;const k=kind[i];if(!k)continue;let g='';
+  if(k.t==='p'){const kk=.78,u0=(1-kk)/2,[x,y]=pt(p,u0,u0),h=8+Math.min(S.tool,8)*2;g=box(x,y,kk,kk,h,'#fff','#e8e8e8','#bdbdbd');
+   const n=Math.min(S.tool,6),L=[x-kk*tw/2,y+kk*th/2],B=[x,y+kk*th],R=[x+kk*tw/2,y+kk*th/2];
+   for(let t=1;t<=n;t++){const f=h*sc*t/(n+1);g+=`<polyline fill="none" points="${q([[L[0],L[1]-f],[B[0],B[1]-f],[R[0],R[1]-f]])}"/>`}}
+  else{const[x,y]=pt(p,.04,.04);g=box(x,y,.92,.92,3,'#f4f4f4','#e0e0e0','#c8c8c8');
+   if(k.t==='c')[[.1,.1],[.52,.1],[.1,.52],[.52,.52]].forEach((o,n)=>{if(k.a[n]===undefined)return;const[cx,cy]=pt(p,o[0],o[1]),sup=k.a[n];g+=box(cx,cy-3*sc,.38,.38,sup?11:7,sup?'#555':'#fff',sup?'#333':'#e8e8e8',sup?'#111':'#bdbdbd')});
+   if(k.t==='m')[0,1,2,3].forEach(n=>{if(k.a[n]===undefined)return;const[cx,cy]=pt(p,.1+.22*n,.2),sup=k.a[n];g+=box(cx,cy-3*sc,.12,.6,sup?15:9,sup?'#555':'#fff',sup?'#333':'#e8e8e8',sup?'#111':'#bdbdbd')})}
+  obj.push({s:p.r+p.c,g})}
+ obj.sort((a,b)=>a.s-b.s);
+ const H=oy+(cols+rows)*th/2+8;
+ return `<svg viewBox="0 0 ${W} ${H.toFixed(0)}" width="100%" role="img" aria-label="Isometric floor plan: ${S.presses} presses, ${SK} sockets, ${N} tiles"><g fill="#fff" stroke="#bbb" stroke-width=".7">${floor}</g><g stroke="#000" stroke-width=".8" stroke-linejoin="round">${obj.map(o=>o.g).join('')}</g></svg>`}
+const CO=[{id:'FRW',n:'Ferrum Works',p0:42,vol:.014,dr:.0002,beta:1,y:.002,link:()=>Math.pow(S.sp/5,.6)},
+{id:'PLD',n:'Polymere Dynamics',p0:28,vol:.016,dr:.0002,beta:1,y:.0025,link:()=>Math.pow(S.pp/8,.6)},
+{id:'BDS',n:'Brightdesk Supply',p0:18,vol:.01,dr:.0003,beta:.8,y:.004,link:()=>1+.15*(dm()-1)},
+{id:'HRB',n:'Harbor Freight Co',p0:75,vol:.006,dr:.0002,beta:.4,y:.006,link:()=>1},
+{id:'NMB',n:'Nimbus Compute',p0:12,vol:.032,dr:.0004,beta:1.8,y:0,link:()=>1+Math.min(.5,S.iterLife/50000)}];
+CO.forEach(c=>A['sel'+c.id]={f:()=>S.stk.sel=c.id});
+const fee=()=>S.res.mkt1?.0025:.005,sig=(c,p)=>{if(!S.res.mkt3)return'';const h=S.stk.h[c.id],a=h.reduce((x,y)=>x+y,0)/h.length,d=p/a-1;return d<-.03?'  ▲ buy signal':d>.03?'  ▼ sell signal':'  - steady'};
+const px=c=>S.stk.L[c.id]*c.link(),selCo=()=>CO.find(c=>c.id===S.stk.sel)||CO[0],owned=()=>(S.stk.own[selCo().id]||{n:0}).n;
+const randn=()=>{let u=0;for(let i=0;i<6;i++)u+=Math.random();return(u-3)/Math.sqrt(.5)};
+function trade(n){const c=selCo(),o=S.stk.own[c.id]||(S.stk.own[c.id]={n:0,cost:0});o.n+=n;o.cost+=px(c)*n*(1+fee())}
+function sell(n){const c=selCo(),o=S.stk.own[c.id],pr=px(c)*n*(1-fee()),share=o.cost*n/o.n;S.cash+=pr;S.stk.real+=pr-share;o.cost-=share;o.n-=n;if(o.n<=0){o.n=0;o.cost=0}}
+function stkStep(){const k=S.stk;k.mf=(k.mf||0)*.9+randn()*.002;CO.forEach(c=>{const L=k.L[c.id];k.L[c.id]=Math.max(c.p0*.3,L*Math.exp(c.dr+c.vol*(S.res.mkt4?.7:1)*randn()+c.beta*k.mf+(c.p0-L)/c.p0*.004));const h=k.h[c.id];h.push(px(c));if(h.length>100)h.shift()})}
+function stkInit(){S.stk=Object.assign({L:{},h:{},own:{},sel:'FRW',t:0,et:90,dv:30,mf:0,real:0,div:0},S.stk);const k=S.stk;CO.forEach(c=>{if(k.L[c.id]==null)k.L[c.id]=c.p0;if(!k.h[c.id])k.h[c.id]=[]});if(!k.h.FRW.length)for(let i=0;i<40;i++)stkStep()}
+const EVU=['wins a large contract.','beats earnings expectations.'],EVD=['warns of weaker orders.','faces a supply recall.'];
+function mkt(dt){if(!S.stk.h.FRW||!S.stk.h.FRW.length)stkInit();const k=S.stk;k.t+=dt;while(k.t>=3){k.t-=3;stkStep();k.et-=3;if(k.et<=0){k.et=60+Math.random()*80;const c=CO[Math.floor(Math.random()*CO.length)],up=Math.random()<(S.res.mkt5?.7:.5),m=.06+Math.random()*.08;k.L[c.id]*=up?1+m:1-m;log('Market: '+c.n+' '+(up?EVU:EVD)[Math.floor(Math.random()*2)])}}
+ k.dv-=dt;if(k.dv<=0){k.dv=30;let t=0;CO.forEach(c=>{const o=k.own[c.id];if(o&&o.n)t+=o.n*px(c)*c.y});if(t>0){t*=S.res.mkt2?1.5:1;S.cash+=t;k.div+=t;if(t>=1)log('Dividends paid: '+M(t))}}}
+function graphSvg(){const c=selCo(),h=S.stk.h[c.id].concat([px(c)]),W=335,H=130,pl=34,pr=6,pt=16,pb=14,mn=Math.min(...h),mx=Math.max(...h),rg=(mx-mn)||1,lo=mn-rg*.12,hi=mx+rg*.12,o=S.stk.own[c.id];
+ const X=i=>pl+(W-pl-pr)*i/(h.length-1),Y=v=>pt+(H-pt-pb)*(1-(v-lo)/(hi-lo));let g='';
+ for(let i=0;i<3;i++){const v=lo+(hi-lo)*i/2,y=Y(v);g+=`<line x1="${pl}" x2="${W-pr}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#ddd"/><text x="${pl-4}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#555">${v.toFixed(v<100?1:0)}</text>`}
+ if(o&&o.n){const ac=o.cost/o.n;if(ac>lo&&ac<hi)g+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(ac).toFixed(1)}" y2="${Y(ac).toFixed(1)}" stroke="#000" stroke-dasharray="3 3"/>`}
+ const pts=h.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' '),ch=(h[h.length-1]/h[0]-1)*100;
+ return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Price history of ${c.n}"><text x="${pl}" y="10" font-size="11" font-family="Arial" font-weight="bold">${c.id}  ${M(h[h.length-1])}  (${ch>=0?'+':''}${ch.toFixed(1)}%)</text>${g}<polyline points="${pts}" fill="none" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/><text x="${pl}" y="${H-3}" font-size="9" fill="#555">5 minutes ago</text><text x="${W-pr}" y="${H-3}" font-size="9" text-anchor="end" fill="#555">now</text>${o&&o.n?'<text x="'+(W-pr)+'" y="10" font-size="9" text-anchor="end" fill="#555">dashed = your average cost</text>':''}</svg>`}
+stkInit();
+$('p_market').innerHTML='<h2>Market</h2><div id="pbox"><div class="itn"><b id="pv">$ 0.00</b> <span>portfolio value</span></div><div class="more" id="pl"></div></div>'+CO.map(c=>`<button class="rc" data-a="sel${c.id}" id="mc_${c.id}"><b>${c.id} ${c.n}</b><span id="mp_${c.id}"></span><small id="ms_${c.id}"></small></button>`).join('')+'<div id="mg"></div><div class="g"><button data-a="mb1">Buy 1</button> <button data-a="mb10">Buy 10</button> <button data-a="ms1">Sell 1</button> <button data-a="msall">Sell all</button><div class="more" id="mtx"></div></div>';
+let sgOpen=false;
+const PAY={HH:[3,3],HU:[0,5],UH:[5,0],UU:[1,1]};
+const STR=[
+{id:'random',n:'Random',d:'Holds or undercuts on a coin flip.',cost:0,f:()=>Math.random()<.5?'H':'U'},
+{id:'hold',n:'Always hold',d:'Never cuts its price.',cost:0,f:()=>'H'},
+{id:'under',n:'Always undercut',d:'Always cuts its price.',cost:0,f:()=>'U'},
+{id:'tft',n:'Tit for tat',d:'Starts by holding, then copies the rival.',cost:10,f:(m,o)=>o.length?o[o.length-1]:'H'},
+{id:'gen',n:'Generous',d:'Copies the rival but forgives 10% of undercuts.',cost:15,f:(m,o)=>o.length?(o[o.length-1]==='U'&&Math.random()<.1?'H':o[o.length-1]):'H'},
+{id:'grudge',n:'Grudger',d:'Holds until the rival undercuts once, then never forgives.',cost:20,f:(m,o)=>o.includes('U')?'U':'H'},
+{id:'pavlov',n:'Win-stay',d:'Repeats a move that paid well and switches after a bad round.',cost:20,f:(m,o)=>!m.length?'H':(o[o.length-1]==='H'?m[m.length-1]:(m[m.length-1]==='H'?'U':'H'))},
+{id:'beat',n:'Beat last',d:'Undercuts a rival that held and holds against one that undercut.',cost:25,f:(m,o)=>o.length?(o[o.length-1]==='H'?'U':'H'):'U'},
+{id:'adapt',n:'Adaptive',d:'Holds at first, then undercuts only rivals that undercut more than half the time.',cost:40,req:'str3',f:(m,o)=>{if(o.length<2)return'H';return o.filter(x=>x==='U').length/o.length>.5?'U':'H'}}];
+function play(a,b,n){const ha=[],hb=[];let sa=0,sb=0;for(let i=0;i<n;i++){const x=a.f(ha,hb),y=b.f(hb,ha),p=PAY[x+y];ha.push(x);hb.push(y);sa+=p[0];sb+=p[1]}return[sa,sb]}
+function runTournament(){const T=STR.filter(t=>!t.req||S.res[t.req]),sc={};T.forEach(t=>sc[t.id]=0);
+ for(let i=0;i<T.length;i++)for(let j=i+1;j<T.length;j++){const[a,b]=play(T[i],T[j],20);sc[T[i].id]+=a;sc[T[j].id]+=b}
+ const rank=T.map(t=>({id:t.id,n:t.n,v:sc[t.id]})).sort((a,b)=>b.v-a.v),me=S.sg.sel,won=rank[0].id===me,base=Math.round(sc[me]/(20*(T.length-1)/7))+(won?5:0),gain=Math.round(base*(S.res.str2?1.25:1))+(S.res.str5?5:0);
+ S.ins+=gain;S.sg.runs++;if(won)S.sg.wins++;S.sg.res={rank,me,won,gain};log('Tournament complete'+(won?': your strategy won':'')+'. +'+gain+' Insight')}
+A.sgrun={cur:'iter',f:runTournament};A.sgdd={f:()=>{sgOpen=!sgOpen}};A.sginfo={f:()=>S.sg.info=!S.sg.info};C.sgrun=()=>S.res.str1?1500:2500;
+A.op1={cur:'ins',f:()=>S.op1++};C.op1=()=>5*(S.op1+1);A.op2={cur:'ins',f:()=>S.op2++};C.op2=()=>5*(S.op2+1);
+STR.forEach(t=>{A['sg_'+t.id]={cur:'ins',f:()=>{if(!S.sg.unl[t.id]){S.sg.unl[t.id]=1;log('Strategy unlocked: '+t.n)}S.sg.sel=t.id;sgOpen=false}};C['sg_'+t.id]=()=>S.sg.unl[t.id]?0:t.cost});
+$('p_strategy').innerHTML='<h2>Strategic Analysis <button data-a="sginfo" id="sgi" class="ib" aria-label="How to use Strategic Analysis" title="How to use">i</button></h2><div id="sginfo"><b>The moves</b><br>Hold: keep your price steady.<br>Undercut: cut your price to steal sales from the rival.<br><br><b>Scoring each round</b><br>Both hold: 3 points each.<br>You undercut, rival holds: you 5, rival 0.<br>You hold, rival undercuts: you 0, rival 5.<br>Both undercut: 1 point each.<br><br><b>Run Tournament</b><br>Costs 2,500 iterations. Every available strategy plays each other once, 20 rounds per match, so with 8 strategies each one plays 7 matches. A strategy only sees the moves made in earlier rounds. Strategies that use chance (Random, Generous) can give different results each time.<br><br><b>Insight</b><br>You earn your total score divided by 20, rounded, plus 5 if your strategy has the top score. Insight is spent on strategies and optimizations.<br><br><b>Strategies</b><br><b>Random</b> (free): holds or undercuts on a coin flip each round.<br><b>Always hold</b> (free): never undercuts. It does well against friendly rivals and gets exploited by aggressive ones.<br><b>Always undercut</b> (free): always cuts its price. It beats pushovers but earns little against rivals that also undercut.<br><b>Tit for tat</b> (10 Insight): holds in round one, then repeats whatever the rival did last round.<br><b>Generous</b> (15): like Tit for tat, but forgives 10% of undercuts by holding anyway.<br><b>Grudger</b> (20): holds until the rival undercuts once, then undercuts for the rest of the match.<br><b>Win-stay</b> (20): repeats its last move while the rival holds, and switches its move after the rival undercuts.<br><b>Beat last</b> (25): opens by undercutting. After that, it undercuts a rival that held last round and holds against one that undercut.<br><b>Adaptive</b> (40, needs Strategy synthesis research): holds for two rounds, then undercuts only rivals that have undercut more than half the time.<br><br><b>Optimizations</b> (cost is 5 Insight times the next level)<br><b>Process optimization</b>: each level adds 10% to press output.<br><b>Demand modeling</b>: each level adds 10% to customer demand.<br><br><b>Research that helps</b><br>Game theory models: tournaments cost 1,500 iterations.<br>Reinforcement learning: 25% more Insight.<br>Strategy synthesis: unlocks Adaptive.<br>Optimization suite: optimizations give 15% per level.<br>Competitor intelligence: 5 extra Insight per tournament.<br><br><b>Tip</b><br>Strategies that retaliate and forgive, like Tit for tat and Generous, usually beat the extremes over many matches.</div><div id="sbox"><div class="itn"><b id="sv">0</b> <span>insight</span></div><div class="more" id="sr"></div></div><div class="more">Rival factories fight price wars. Pick a strategy and run a tournament against every rival. Your score earns Insight.</div><table class="pm"><tr><td></td><td>rival holds</td><td>rival undercuts</td></tr><tr><td>you hold</td><td>3 / 3</td><td>0 / 5</td></tr><tr><td>you undercut</td><td>5 / 0</td><td>1 / 1</td></tr></table>'+'<button class="rc" data-a="sgdd" id="sgdd" aria-haspopup="true"><b id="sgddn"></b><span id="sgdda">&#9662;</span><small id="sgdds"></small></button><div id="sgmenu">'+STR.map(t=>`<button class="rc" data-a="sg_${t.id}" id="sgb_${t.id}"><b>${t.n}</b><span id="sgc_${t.id}"></span><small>${t.d}</small></button>`).join('')+'</div>'+B('sgrun','Run Tournament',1)+'<div id="sgres"></div>'+B('op1','Process optimization',1)+B('op2','Demand modeling',1);
+function stratUI(){const cur0=STR.find(t=>t.id===S.sg.sel)||STR[0];$('sgddn').textContent='Strategy: '+cur0.n;$('sgdds').textContent=cur0.d;$('sgdda').innerHTML=sgOpen?'&#9652;':'&#9662;';$('sgmenu').classList.toggle('on',sgOpen);$('sginfo').classList.toggle('on',!!S.sg.info);$('sgi').classList.toggle('on',!!S.sg.info);$('sv').textContent=big(S.ins);$('sr').textContent='Tournaments: '+S.sg.runs+' run, '+S.sg.wins+' won';
+ STR.forEach(t=>{const u=S.sg.unl[t.id],sel=S.sg.sel===t.id;$('sgb_'+t.id).classList.toggle('on',sel);$('sgb_'+t.id).style.display=(!t.req||S.res[t.req])?'':'none';$('sgc_'+t.id).textContent=sel?'selected':u?'ready':t.cost+' insight to unlock'});
+ $('l_op1').textContent='Level '+S.op1+' (+'+(S.res.str4?15:10)+'% press output each)';$('l_op2').textContent='Level '+S.op2+' (+'+(S.res.str4?15:10)+'% demand each)';
+ const r=S.sg.res;setH($('sgres'),r?'<div class="more"><b>'+(r.won?'Your strategy won.':'Last tournament')+'</b> +'+r.gain+' insight</div>'+r.rank.map((x,i)=>'<div class="more">'+(i+1)+'. '+x.n+' '+x.v+(x.id===r.me?' (you)':'')+'</div>').join(''):'<div class="more">No tournaments yet.</div>')}
+const MU={ctx:null,on:false,m:null,sx:null,dl:null,nb:null,tm:null,nt:0,st:0};let muPref=true,sxPref=true;try{muPref=localStorage.getItem('tti_music')!=='0';sxPref=localStorage.getItem('tti_sfx')!=='0'}catch(e){}
+const hz=n=>440*Math.pow(2,(n-69)/12),STEP=60/84/2;
+const CH=[[60,64,67,71],[57,60,64,67],[62,65,69,72],[55,59,62,65]],BS=[36,33,38,31];
+const MEL=[[[0,76],[3,79],[5,76],[6,74]],[[0,72],[3,76],[5,74],[6,72]],[[0,74],[3,77],[5,74],[6,72]],[[0,71],[2,74],[4,79],[6,77]]];
+function ac(){if(!MU.ctx){const C=new(window.AudioContext||window.webkitAudioContext)();MU.ctx=C;
+ const sx=C.createGain();sx.gain.value=.55;const sxl=C.createBiquadFilter();sxl.type='lowpass';sxl.frequency.value=2800;sxl.Q.value=.5;sx.connect(sxl);sxl.connect(C.destination);MU.sx=sx;
+ const m=C.createGain();m.gain.value=0;const lp=C.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;m.connect(lp);lp.connect(C.destination);MU.m=m;
+ const dl=C.createDelay(1);dl.delayTime.value=STEP*1.5;const fb=C.createGain();fb.gain.value=.28;const df=C.createBiquadFilter();df.type='lowpass';df.frequency.value=1600;dl.connect(df);df.connect(fb);fb.connect(dl);df.connect(m);MU.dl=dl;
+ const nb=C.createBuffer(1,Math.floor(C.sampleRate*.3),C.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;MU.nb=nb}
+ return MU.ctx}
+function env(g,t,a,peak,dec){g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+dec)}
+function osc(type,f,t,a,dec,peak,dest,f2){const C=MU.ctx,o=C.createOscillator(),g=C.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+a+dec);env(g,t,a,peak,dec);o.connect(g);dest.forEach(d=>g.connect(d));o.start(t);o.stop(t+a+dec+.05)}
+function noise(t,dur,freq,type,peak,dest){const C=MU.ctx,src=C.createBufferSource(),f=C.createBiquadFilter(),g=C.createGain();src.buffer=MU.nb;f.type=type;f.frequency.value=freq;env(g,t,.002,peak,dur);src.connect(f);f.connect(g);dest.forEach(d=>g.connect(d));src.start(t);src.stop(t+dur+.05)}
+function epiano(n,t,dec,g,dest){osc('sine',hz(n),t,.01,dec,g,dest);osc('sine',hz(n)*2,t,.005,dec*.4,g*.35,dest);osc('triangle',hz(n),t,.01,dec*.6,g*.25,dest)}
+function muSched(){const C=MU.ctx;while(MU.nt<C.currentTime+.4){const q=MU.st,bar=Math.floor(q/8)%4,k=q%8,t=MU.nt+(k%2?STEP*.14:0),m=[MU.m];
+ if(k===0)CH[bar].forEach((n,i)=>epiano(n,t+i*.012,STEP*7,.05,m));
+ if(k===4)CH[bar].slice(1).forEach((n,i)=>epiano(n,t+i*.012,STEP*3,.03,m));
+ if(k===0||k===3||k===6)osc('triangle',hz(BS[bar]+(k===6?12:0)),t,.01,STEP*1.6,.2,m);
+ if(k===0||k===4)osc('sine',120,t,.002,.2,.55,m,42);
+ if(k===2||k===6)noise(t,.14,1800,'bandpass',.07,m);
+ noise(t,.05,7000,'highpass',k%2?.015:.03,m);
+ const mel=MEL[bar].find(x=>x[0]===k);if(mel&&Math.random()<.8+Math.min(.2,S.presses/100)){osc('triangle',hz(mel[1]),t,.01,.45,.08,[MU.m,MU.dl]);osc('sine',hz(mel[1])*2,t,.005,.15,.02,[MU.m,MU.dl])}
+ MU.nt+=STEP;MU.st++}}
+function muSet(on){MU.on=on;try{localStorage.setItem('tti_music',on?'1':'0')}catch(e){}
+ const b=$('mu');b.classList.toggle('on',on);b.title=on?'Music on':'Music off';b.setAttribute('aria-pressed',on);
+ if(on){const C=ac();C.resume();MU.m.gain.cancelScheduledValues(C.currentTime);MU.m.gain.linearRampToValueAtTime(.8,C.currentTime+1.5);MU.nt=C.currentTime+.1;MU.st=Math.ceil(MU.st/32)*32;if(!MU.tm)MU.tm=setInterval(muSched,100)}
+ else if(MU.ctx){MU.m.gain.cancelScheduledValues(MU.ctx.currentTime);MU.m.gain.linearRampToValueAtTime(0,MU.ctx.currentTime+.6);clearInterval(MU.tm);MU.tm=null}}
+function sxSet(on){sxPref=on;try{localStorage.setItem('tti_sfx',on?'1':'0')}catch(e){}const b=$('sx');b.classList.toggle('on',on);b.title=on?'Sound effects on':'Sound effects off';b.setAttribute('aria-pressed',on)}
+function clk(t,d,p,g){noise(t,.02,1500*p,'bandpass',.3*g,d);osc('sine',800*p,t,.001,.015,.14*g,d,400*p);osc('sine',180*p,t,.001,.06,.22*g,d,70*p)}
+function bell(t,f,len,g,d){if(f>1100)f/=2;osc('sine',f,t,.004,len,g,d);osc('sine',f*2.76,t,.004,len*.4,g*.12,d)}
+function sfx(kind){if(!sxPref)return;if(!MU.ctx&&navigator.userActivation&&!navigator.userActivation.hasBeenActive)return;let C;try{C=ac()}catch(e){return}if(C.state==='suspended')C.resume();const t=C.currentTime+.005,d=[MU.sx];
+ switch(kind){
+ case'click':clk(t,d,1+Math.random()*.06,1);break;
+ case'make':{const p=.9+Math.random()*.25;clk(t,d,p,1.3);osc('sine',210*p,t,.001,.09,.3,d,55);bell(t+.015,2100*p,.16,.07,d);break}
+ case'buy':clk(t,d,1.1,1);bell(t+.04,1319,.35,.11,d);bell(t+.11,1760,.5,.11,d);break;
+ case'cash':clk(t,d,1.3,1.1);noise(t+.03,.09,2500,'bandpass',.1,d);bell(t+.05,1760,.5,.1,d);bell(t+.13,2349,.7,.1,d);break;
+ case'up':clk(t,d,1.25,.8);clk(t+.045,d,1.6,.8);break;
+ case'down':clk(t,d,.9,.8);clk(t+.045,d,.7,.8);break;
+ case'research':clk(t,d,1,1);[523,659,784,1047].forEach((f,i)=>bell(t+.04+i*.07,f*2,.4,.09,d));break;
+ case'run':for(let i=0;i<7;i++)clk(t+i*.045,d,1+i*.1,.7);bell(t+.35,1568,.5,.09,d);break;
+ case'unlock':osc('sine',110,t,.002,.35,.35,d,45);clk(t,d,.8,1.2);[523,659,784,1047].forEach((f,i)=>bell(t+.05+i*.08,f,.9,.09,d));break;
+ case'chime':bell(t,1175,.8,.12,d);bell(t+.12,1568,1.1,.11,d);break}}
+function sfxFor(a,c){const x=A[a];if(a==='make')return sfx('make');if(a==='raise')return sfx('up');if(a==='lower')return sfx('down');if(a==='sgrun')return sfx('run');if(/^(mb|ms)/.test(a))return sfx('cash');if(x&&x.cur==='iter')return sfx('research');if(x&&x.cur&&c>0)return sfx('buy');sfx('click')}
+$('mu').addEventListener('click',()=>{muPref=!MU.on;muSet(!MU.on);if(MU.on)sfx('click')});
+$('sx').addEventListener('click',()=>{sxSet(!sxPref);sfx('click')});sxSet(sxPref);
+const muFirst=e=>{if(e.target.closest&&e.target.closest('#mu,#sx'))return;document.removeEventListener('pointerdown',muFirst);document.removeEventListener('keydown',muFirst);if(muPref&&!MU.ctx)muSet(true)};
+document.addEventListener('pointerdown',muFirst);document.addEventListener('keydown',muFirst);
+document.addEventListener('visibilitychange',()=>{if(!MU.ctx)return;if(document.hidden)MU.ctx.suspend();else MU.ctx.resume()});
+const GOVU=25,pc=v=>S.pay==='cash'?Math.ceil(v*300000):Math.max(1,Math.round(v));
+const qr=()=>150/(1+.03*S.qb)*(S.res.qpar?.8:1),QS=()=>(1.25+.03*S.qb)*(S.res.qrate?1.4:1),NB=()=>.2*(S.coh/100)*(S.res.qyield?1.5:1),QF={t:0};
+function hbar(p,n){const f=Math.round(Math.max(0,Math.min(1,p))*n);return '['+'\u2588'.repeat(f)+'\u2591'.repeat(n-f)+']'}
+A.paytog={f:()=>{S.pay=S.pay==='cash'?'gov':'cash'}};A.qon={f:()=>S.qOn=!S.qOn};A.qi={f:()=>S.qinfo=!S.qinfo};
+
+A.qubit={cur:'cash',ok:()=>S.qb<16,f:()=>S.qb++};C.qubit=()=>10000*Math.pow(1.75,S.qb)*(S.res.qeff?.75:1);
+function qpulse(n){const r=$('qreg');if(!r||!n)return;r.classList.remove('go');void r.offsetWidth;r.classList.add('go')}
+function qFlip(dt){QF.t+=dt;if(QF.t<(S.qOn?.2:1.3))return;QF.t=0;if(!S.qb)return;const n=S.qOn?Math.max(1,Math.ceil(S.qb/3)):1;for(let k=0;k<n;k++){const e=$('qc'+Math.floor(Math.random()*S.qb));if(e)e.textContent=e.textContent==='0'?'1':'0'}}
+function quantum(dt){if(!S.u.quantum||!S.qOn)return;
+ const spend=Math.min(S.adv,QS()*dt);if(spend<=0)return;
+ S.adv-=spend;S.nab+=spend*NB();S.qacc+=spend;let n=0;while(S.qacc>=qr()){S.qacc-=qr();S.gov+=GOVU;S.qtot+=GOVU;n++}if(n){qpulse(n);sfx('chime')}
+ if(S.qb>0){S.coh-=(.35+.06*S.qb)*(S.res.qec?.6:1)*(S.res.qdamp?.7:1)*dt;if(S.coh<=0){S.qb--;S.coh=100;log('Quantum: a qubit decohered and was lost.');sfx('down')}}}
+$('p_quantum').innerHTML='<h2>Quantum Computing <button data-a="qi" id="qi" class="ib" aria-label="How quantum computing works" title="How it works">i</button></h2><div id="qinfo"><b>How it works</b><br>The quantum processor turns advanced computations into Gov. Support. Each box in the register is a qubit. They flip between 0 and 1 while the core runs, and flash when a Gov. Support is made.<br><br><b>Quantum Core</b><br>While ON, it converts continuously. It uses up to 1.25 adv. comp. per second, plus 0.03 for every qubit. Every 150 adv. comp. it spends makes 25 Gov. Support, about one batch every 1 to 2 minutes if you can supply enough adv. comp.<br><br><b>Qubits</b><br>Each qubit costs cash, makes the conversion 3% more efficient and speeds the core up a little. You can have up to 16.<br><br><b>Coherence</b><br>Running the core drains coherence, faster with more qubits. When it reaches 0, one qubit decoheres and is lost, and coherence resets to full. Coherence does not recover on its own. It works like the durability of your qubits.<br><br><b>Numeric analysis bits</b><br>Running the quantum core also produces numeric analysis bits, a research currency. Some research projects cost bits as well as iterations and adv. comp. Bits come out slower when coherence is low.</div><div id="qreg">'+Array.from({length:16},(_,i)=>'<span class="qc" id="qc'+i+'">'+(i%3?0:1)+'</span>').join('')+'</div><pre id="qhw"></pre><div class="g"><button data-a="qon" id="b_qon"></button></div>'+B('qubit','Qubit',1);
+function qUI(){$('qinfo').classList.toggle('on',!!S.qinfo);$('qi').classList.toggle('on',!!S.qinfo);$('b_qon').textContent='Quantum Core: '+(S.qOn?'ON':'OFF');
+ for(let i=0;i<16;i++)$('qc'+i).classList.toggle('off',i>=S.qb);
+ const pr=Math.min(1,S.qacc/qr());
+ $('qhw').textContent=' Status     '+(S.qOn?'running':'idle')+'\n Qubits     '+S.qb+' / 16\n Temp       '+(18-.4*S.qb).toFixed(1)+' mK\n Coherence  '+hbar(S.coh/100,8)+' '+Math.round(S.coh)+'%\n Gate rate  +'+QS().toFixed(2)+' adv. comp./s\n Ratio      '+Math.round(qr())+' adv. comp. : '+GOVU+' gov.\n Input      '+(S.adv>=1e14?'\u221e':S.adv.toFixed(1))+' adv. comp.\n Bits       '+F(S.nab,1)+' (+'+(S.qOn&&S.adv>0?QS()*NB():0).toFixed(2)+'/s)\n Progress   '+hbar(pr,12)+' '+String(Math.round(pr*100)).padStart(3)+'%\n Converted  '+F(S.qtot,0)+' gov. support';
+ $('l_qubit').textContent=S.qb+' / 16'}
+const INFO={
+computing:'<b>Computational Resources</b><br>Each socket holds up to 4 cores and 4 RAM sticks, and takes 3 tiles of floor space. Cores raise your iteration storage. RAM raises how fast you make iterations. Cores and RAM are bought with Gov. Support, or with cash at a far higher price. Super parts are much stronger. Threads also produce advanced computations, which research and quantum computing use.',
+market:'<b>Market</b><br>Invest your cash in five fictional companies. Select a company, then Buy or Sell shares. Each trade has a fee. Prices drift randomly and are pushed by events. Ferrum Works follows steel prices and Polymere Dynamics follows plastic prices. The graph shows the last 5 minutes, and dividends pay out about every 30 seconds.'};
+Object.keys(INFO).forEach(id=>{const sec=$('p_'+id);if(id==='workbench')sec.insertAdjacentHTML('afterbegin','<h2>Workbench</h2>');const h=sec.querySelector('h2');if(!h)return;
+ h.insertAdjacentHTML('beforeend',' <button class="ib" data-a="info_'+id+'" id="ib_'+id+'" aria-label="About this section" title="About this section">i</button>');
+ h.insertAdjacentHTML('afterend','<div class="info" id="inf_'+id+'">'+INFO[id]+'</div>');
+ A['info_'+id]={f:()=>{S.info=S.info||{};S.info[id]=!S.info[id]}}});
+function infoUI(){Object.keys(INFO).forEach(id=>{const on=!!(S.info&&S.info[id]);$('inf_'+id).classList.toggle('on',on);$('ib_'+id).classList.toggle('on',on)})}
+const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const unb64u=t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';return Uint8Array.from(atob(t),c=>c.charCodeAt(0))};
+const pack=txt=>new Response(new Blob([txt]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer().then(b64u);
+const unpack=t=>new Response(new Blob([unb64u(t)]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+const ckSet=(k,v,age)=>{document.cookie=k+'='+v+'; Max-Age='+age+'; Path=/; SameSite=None; Secure; Partitioned'};
+function ckClear(){try{for(let i=0;i<8;i++)ckSet('tti_'+i,'',0);ckSet('tti_n','',0)}catch(e){}}
+function ckWrite(b){const n=Math.ceil(b.length/3000);for(let i=0;i<n;i++)ckSet('tti_'+i,b.slice(i*3000,(i+1)*3000),31536000);ckSet('tti_n',n,31536000);for(let i=n;i<8;i++)ckSet('tti_'+i,'',0)}
+function ckRead(){const m={};document.cookie.split('; ').forEach(c=>{const k=c.indexOf('=');if(k>0)m[c.slice(0,k)]=c.slice(k+1)});const n=+m.tti_n;if(!n)return null;let t='';for(let i=0;i<n;i++){if(!m['tti_'+i])return null;t+=m['tti_'+i]}return t}
+let SAVEST={ls:false,ck:false};
+async function saveAll(){S.ts=Date.now();const txt=JSON.stringify(S);let ls=false,ck=false;
+ try{localStorage.setItem('tti3',txt);ls=true}catch(e){}
+ try{if(typeof CompressionStream!=='undefined'){ckWrite(await pack(txt));ck=ckRead()!==null}}catch(e){}
+ SAVEST={ls,ck};return SAVEST}
+async function restoreFromCookie(){try{const raw=ckRead();if(!raw||typeof DecompressionStream==='undefined')return;const obj=JSON.parse(await unpack(raw));if((obj.ts||0)>(S.ts||0)){S=Object.assign(fresh(),obj);S.u.sales=1;S.u.materials=1;log('Save restored from cookie.')}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveAll()});addEventListener('pagehide',()=>{saveAll()});
+restoreFromCookie();
+function ckList(){const out=[];try{document.cookie.split('; ').forEach(c=>{const k=c.indexOf('=');if(k>0&&c.slice(0,k).startsWith('tti_'))out.push([c.slice(0,k),c.length-k-1])})}catch(e){}return out}
+function ckRender(msg){const keep=$('ckx')?$('ckx').value:'';let ls='blocked';try{const t=localStorage.getItem('tti3');ls=t?(t.length/1024).toFixed(1)+' KB':'empty'}catch(e){}
+ const cl=ckList(),tot=cl.reduce((a,x)=>a+x[1],0);
+ $('ckb').innerHTML='<h3>Saved data</h3><pre>Browser storage  '+ls+'\nCookies          '+(cl.length?cl.length+' ('+(tot/1024).toFixed(1)+' KB)':'none')+'\nLast saved       '+(S.ts?new Date(S.ts).toLocaleTimeString():'not yet')+'</pre>'+(cl.length?'<pre>'+cl.map(x=>x[0].padEnd(8)+x[1]+' bytes').join('\n')+'</pre>':'')+'<div class="g"><button data-ck="save">Save now</button> <button data-ck="clear">Clear cookies</button> <button data-ck="export">Export code</button> <button data-ck="import">Import code</button></div><textarea id="ckx" rows="4" spellcheck="false" placeholder="A save code appears here. Paste one here and press Import code."></textarea><div class="more" id="ckmsg">'+(msg||'')+'</div><div class="g"><button data-ck="close">Close</button></div>';$('ckx').value=keep}
+const ckClose=()=>$('ckm').classList.remove('on');
+$('ckm').addEventListener('click',async e=>{if(e.target===$('ckm'))return ckClose();const b=e.target.closest('[data-ck]');if(!b)return;const a=b.dataset.ck;
+ if(a==='close')return ckClose();
+ if(a==='save'){const r=await saveAll();return ckRender('Saved. Browser storage: '+(r.ls?'ok':'blocked')+', cookie: '+(r.ck?'ok':'blocked')+'.')}
+ if(a==='clear'){ckClear();return ckRender('Cookies cleared. They are written again at the next save.')}
+ if(a==='export'){try{S.ts=Date.now();const code='TTI1.'+await pack(JSON.stringify(S));ckRender('Copy this code to keep a backup. It works on any browser.');$('ckx').value=code;$('ckx').select();try{navigator.clipboard.writeText(code).catch(()=>{})}catch(e){}}catch(er){ckRender('Could not make a code in this browser.')}return}
+ if(a==='import'){try{const t=$('ckx').value.trim();if(!t.startsWith('TTI1.'))throw 0;const obj=JSON.parse(await unpack(t.slice(5)));S=Object.assign(fresh(),obj);S.u.sales=1;S.u.materials=1;await saveAll();log('Save imported.');ckRender('Save imported.')}catch(er){ckRender('That code is not valid.')}}});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&$('ckm').classList.contains('on'))ckClose()});
+let SET={theme:'light',scale:100};
+try{const t=localStorage.getItem('tti_set');if(t)Object.assign(SET,JSON.parse(t));else{const m=/(?:^|; )tti_set=(light|dark)-(\d+)/.exec(document.cookie);if(m){SET.theme=m[1];SET.scale=+m[2]}}}catch(e){}
+function applySet(){document.documentElement.dataset.theme=SET.theme==='dark'?'dark':'light';SCALE=Math.max(.7,Math.min(1.5,SET.scale/100));const a=$('app');a.style.transformOrigin='0 0';a.style.transform=SCALE===1?'':'scale('+SCALE+')';a.style.width=SCALE===1?'':'calc(100%/'+SCALE+')';fit()}
+function saveSet(){try{localStorage.setItem('tti_set',JSON.stringify(SET))}catch(e){}try{document.cookie='tti_set='+SET.theme+'-'+SET.scale+'; Max-Age=31536000; Path=/; SameSite=None; Secure; Partitioned'}catch(e){}}
+function stRender(){$('ckb').innerHTML='<h3>Settings</h3><div class="g">Theme: <button data-st="light" class="'+(SET.theme!=='dark'?'sel':'')+'">Light</button> <button data-st="dark" class="'+(SET.theme==='dark'?'sel':'')+'">Dark</button></div><div class="g">Page scale: <b id="stv">'+SET.scale+'%</b><input type="range" id="stsc" min="70" max="150" step="5" value="'+SET.scale+'" aria-label="Page scale"><button data-st="rs">Reset scale</button></div><div class="g"><button data-st="data">Saved data</button> <button data-st="close">Close</button></div>';$('ckm').classList.add('on')}
+$('st').addEventListener('click',stRender);
+$('ckm').addEventListener('click',e=>{const b=e.target.closest('[data-st]');if(!b)return;const a=b.dataset.st;
+ if(a==='close')return ckClose();if(a==='data'){ckRender();return}
+ if(a==='light'||a==='dark'){SET.theme=a;applySet();saveSet();return stRender()}
+ if(a==='rs'){SET.scale=100;applySet();saveSet();return stRender()}});
+$('ckm').addEventListener('input',e=>{if(e.target.id==='stsc'){SET.scale=+e.target.value;$('stv').textContent=SET.scale+'%';applySet();saveSet()}});
+applySet();
+let last=Date.now(),sv=0,pt=0,starved=false,orders=0,waveT=3,iterPend=0,iterT=3;const ar={s:'',p:''},pv={s:5,p:8},BASE={s:5,p:8};
+const MEV=[{k:'s',m:.25,t:'Steel tariffs take effect. Steel prices are rising.'},{k:'s',m:-.2,t:'Scrap steel surplus. Steel prices are falling.'},{k:'p',m:.25,t:'Oil prices spike. Plastic prices are rising.'},{k:'p',m:-.2,t:'Resin glut at the refineries. Plastic prices are falling.'}];
+const clampP=(k,v)=>Math.max(BASE[k]*.5,Math.min(BASE[k]*2.4,v));
+const PER={s:420,p:540};
+function matMarket(dt){const t=Date.now()/1000,di=Math.max(.5,Math.min(2,dm()*(1+.5*S.mkt)*(S.res.mkt?1.4:1)));
+ for(const k of['s','p']){S.bp[k]-=S.bp[k]*dt/120;S.ep[k]-=S.ep[k]*dt/150;const f=k+'p',wave=1+.18*Math.sin(t*2*Math.PI/PER[k]+(k==='p'?2:0)),target=BASE[k]*wave*(1+.2*(di-1)+S.bp[k]+S.ep[k]);S[f]=clampP(k,S[f]+(target-S[f])*.02*dt)}
+ if((S.mevT-=dt)<=0){S.mevT=240+Math.random()*240;const e=MEV[Math.floor(Math.random()*MEV.length)];S.ep[e.k]+=e.m;log('Market: '+e.t)}
+ if((pt+=dt)>=10){pt=0;for(const k of['s','p']){const d=S[k+'p']-pv[k];pv[k]=S[k+'p'];ar[k]=d>.01?'▲ ':d<-.01?'▼ ':''}}}
+const VARS={tacks:'tacks',lifetime:'life',cash:'cash',steel:'steel',plastic:'plastic',presses:'presses',tooling:'tool',floorspace:'cap',marketing:'mkt',integrity:'integ',adv:'adv',cores:'cores',supercores:'score',superram:'sram',gov:'gov',insight:'ins',bits:'nab',qubits:'qb',sockets:'sockets',ram:'sticks',iterations:'iter',price:'p',steelprice:'sp',plasticprice:'pp'};
+const LIM={p:[.01,1000],integ:[0,100],cores:[0,64],sticks:[0,32],sockets:[1,99],qb:[0,16],sp:[1,50],pp:[1,50]},INT=['presses','tool','cap','mkt','cores','sticks','sockets','score','sram','gov','qb'];
+const num=t=>{const m=/^(-?\d*\.?\d+)([kmbt]?)$/.exec(t||'');return m?parseFloat(m[1])*({k:1e3,m:1e6,b:1e9,t:1e12}[m[2]]||1):NaN};
+const fmtv=n=>n%1?n.toFixed(3):''+n;
+function setV(k,v,add){const f=VARS[k];if(!f)return 'Unknown name: '+k+'. Type help.';if(add&&S.inf[f])return k+' is already infinite.';delete S.inf[f];const l=LIM[f]||[0,1e15];let n=Math.max(l[0],Math.min(l[1],add?S[f]+v:v));if(INT.includes(f))n=Math.round(n);if(f==='tacks'&&n>S.tacks)S.life+=n-S.tacks;S[f]=n;return k+' = '+fmtv(n)}
+const INF=['tacks','life','cash','steel','plastic','iter','adv','gov','ins','nab'];const HIST=[];let hi=0;
+function run(line){const w=line.trim().toLowerCase().split(/\s+/),c=w[0];if(!c)return;if(['set','add','unlock','advance','research'].includes(c))S.cheat=true;
+ if(c==='help'){log('Commands: set, add, get, unlock, advance, research, wave, clear.');log('Example: set tacks 5k   add cash 100   unlock all');log('Use inf for endless cash, tacks, steel, plastic, iterations, adv, gov or lifetime.');log('Names: '+Object.keys(VARS).join(', '));return}
+ if((c==='set'||c==='add')&&/^(inf|infinite|infinity|∞)$/.test(w[2]||'')){const f=VARS[w[1]];if(!f)return log('Unknown name: '+(w[1]||'')+'. Type help.');if(!INF.includes(f))return log(w[1]+' cannot be infinite. Try cash, tacks, steel, plastic, iterations, adv, gov or lifetime.');S.inf[f]=true;S[f]=1e15;return log(w[1]+' = ∞')}
+ if(c==='set'||c==='add'){const v=num(w[2]);if(!w[1]||isNaN(v))return log('Usage: '+c+' <name> <number>. Numbers can end in k, m, b or t.');return log(setV(w[1],v,c==='add'))}
+ if(c==='get'){if(!w[1])return log('tacks '+fmtv(S.tacks)+', cash '+fmtv(S.cash)+', lifetime '+fmtv(S.life));const f=VARS[w[1]];return log(f?w[1]+' = '+(S.inf[f]?'∞':fmtv(S[f])):'Unknown name: '+w[1])}
+ if(c==='unlock'){const ids=w[1]==='all'?UL.map(u=>u.id):UL.filter(u=>u.id===w[1]).map(u=>u.id);if(!ids.length)return log('Systems: '+UL.map(u=>u.id).join(', ')+', all');ids.forEach(i=>{S.u[i]=1;S.life=Math.max(S.life,UL.find(u=>u.id===i).at)});return log('Unlocked: '+ids.join(', '))}
+ if(c==='advance'){let n=nextU();if(!n)return log('Everything is already unlocked.');if(w[1]==='all'){const names=[];while(n){S.u[n.id]=1;S.life=Math.max(S.life,n.at);names.push(n.name);n=nextU()}RES.forEach(r=>S.res[r.id]=1);return log('Advanced through: '+names.join(', ')+'. All research completed.')}S.u[n.id]=1;S.life=Math.max(S.life,n.at);log('NEW SYSTEM UNLOCKED: '+n.name.toUpperCase());return log(n.msg)}
+ if(c==='research'){const ids=w[1]==='all'?RES.map(r=>r.id):RES.filter(r=>r.id===w[1]).map(r=>r.id);if(!ids.length)return log('Projects: '+RES.map(r=>r.id).join(', ')+', all');ids.forEach(i=>S.res[i]=1);return log('Researched: '+ids.join(', '))}
+ if(c==='sfx'){const v=w[1]==='off'?false:w[1]==='on'?true:!sxPref;sxSet(v);return log('Sound effects '+(v?'on':'off'))}
+ if(c==='music'){const v=w[1]==='off'?false:w[1]==='on'?true:!MU.on;muPref=v;muSet(v);return log('Music '+(v?'on':'off'))}
+ if(c==='cookies'){ckRender();$('ckm').classList.add('on');return}
+ if(c==='save'){saveAll().then(r=>log('Saved. Browser storage: '+(r.ls?'ok':'blocked')+'. Cookie: '+(r.ck?'ok':'blocked')+'.'));return}
+ if(c==='wave'){waveT=0;return log('Customer wave called.')}
+ if(c==='clear'){L.length=0;return draw()}
+ log('Unknown command: '+c.replace(/[<>&]/g,'')+'. Type help.')}
+$('ci').addEventListener('keydown',e=>{if(e.key==='Enter'){const v=$('ci').value;$('ci').value='';if(v.trim()){HIST.push(v);hi=HIST.length;log('$ '+v.replace(/[<>&]/g,''));run(v);upd()}}
+ else if(e.key==='ArrowUp'&&hi>0&&!shown){hi--;$('ci').value=HIST[hi];e.preventDefault()}else if(e.key==='ArrowDown'&&!shown){hi=Math.min(HIST.length,hi+1);$('ci').value=HIST[hi]||'';e.preventDefault()}});
+const CMDS=[['help','list commands'],['set','set a value'],['add','add to a value'],['get','read a value'],['unlock','unlock a system or all'],['advance','unlock the next system or all'],['research','finish a project'],['music','toggle background music'],['sfx','toggle button sounds'],['cookies','view and manage saved data'],['save','save now and show where it saved'],['wave','call a customer wave'],['clear','clear the console']],NEEDS=['set','add','get','unlock','research'];
+let sel=0,cur=[],shown=false;
+function sugg(){const parts=$('ci').value.split(/\s+/),idx=parts.length-1,last=parts[idx].toLowerCase(),c=parts[0].toLowerCase();let pool=[];
+ if(idx===0)pool=CMDS;
+ else if(idx===1){if(c==='advance')pool=[['all','unlock every remaining system']];else if(c==='set'||c==='add'||c==='get')pool=Object.keys(VARS).map(k=>[k,(S.inf[VARS[k]]?'∞':fmtv(Math.round(S[VARS[k]]*1000)/1000))]);else if(c==='unlock')pool=UL.map(u=>[u.id,S.u[u.id]?'unlocked':'locked']).concat([['all','everything']]);else if(c==='research')pool=RES.map(r=>[r.id,S.res[r.id]?'done':r.n]).concat([['all','everything']])}
+ else if(idx===2&&(c==='set'||c==='add')&&VARS[parts[1]])return[['<number>','e.g. 250, 5k, 0.12, inf',1]];
+ return pool.filter(x=>x[0].startsWith(last))}
+function renderSug(){const el=$('sug');cur=$('ci').value?sugg():[];shown=cur.length>0;if(sel>=cur.length)sel=0;
+ el.classList.toggle('on',shown);el.innerHTML=cur.map((x,i)=>`<div class="si${i===sel?' sel':''}${x[2]?' hint':''}" data-i="${i}"><b>${x[0].replace(/</g,'&lt;')}</b><span>${x[1]}</span></div>`).join('');
+ const s=el.querySelector('.sel');if(s)s.scrollIntoView({block:'nearest'})}
+function accept(i){const x=cur[i];if(!x||x[2])return;const parts=$('ci').value.split(/\s+/),idx=parts.length-1,c=parts[0].toLowerCase();parts[idx]=x[0];
+ if((idx===0&&NEEDS.includes(x[0]))||(idx===1&&(c==='set'||c==='add')))parts.push('');
+ $('ci').value=parts.join(' ');$('ci').focus();sel=0;renderSug()}
+$('ci').addEventListener('input',()=>{sel=0;renderSug()});
+$('ci').addEventListener('keydown',e=>{if(e.key==='Escape'){$('ci').value='';renderSug();$('ci').blur();return}
+ if(e.key==='Enter'){setTimeout(renderSug,0);return}
+ if(!shown)return;const n=cur.length;
+ if(e.key==='ArrowDown'){e.preventDefault();sel=(sel+1)%n;renderSug()}else if(e.key==='ArrowUp'){e.preventDefault();sel=(sel+n-1)%n;renderSug()}else if(e.key==='Tab'){e.preventDefault();accept(sel)}});
+$('sug').addEventListener('mousedown',e=>e.preventDefault());
+$('sug').addEventListener('click',e=>{const d=e.target.closest('.si');if(d)accept(+d.dataset.i)});
+$('con').addEventListener('click',()=>{$('con').classList.add('open');$('ci').focus()});
+$('ci').addEventListener('blur',()=>{$('sug').classList.remove('on');shown=false;if(!$('ci').value)$('con').classList.remove('open')});
+$('ci').addEventListener('focus',renderSug);
+log('Welcome to Thumbtack Industries');log('Click Make Thumbtack to begin. Customers buy automatically, in waves.');
+setInterval(()=>{const now=Date.now(),dt=Math.min(1,(now-last)/1000);last=now;
+ for(const k in S.inf)if(S.inf[k])S[k]=1e15;
+ S.pt+=dt;report();advisor(dt);quantum(dt);qFlip(dt);
+ matMarket(dt);S.adv+=advRate()*dt;let p=prod()*dt;starved=false;if(p>0){const f=Math.min(1,S.steel/(p*useS()),S.plastic/(p*useP()));if(f<1){starved=true;p*=f}S.steel=Math.max(0,S.steel-p*useS());S.plastic=Math.max(0,S.plastic-p*useP())}S.tacks+=p;S.life+=p;
+ if(S.u.factory&&S.presses)S.integ=Math.max(0,S.integ-.25*dt*(S.res.autom?.5:1)*(1+S.presses/20));
+ if(S.u.sales){orders=Math.min(orders+dem()*dt,dem()*7);if((waveT-=dt)<=0){waveT=1+Math.random()*5;const n=Math.min(Math.floor(S.tacks),Math.max(1,Math.floor(orders*(.4+Math.random()*.6))));if(n>0){S.tacks-=n;orders-=n;S.cash+=n*S.p;S.rev+=n*S.p;S.sold+=n}}}
+ const gi=Math.max(0,Math.min(ips()*dt,iterCap()-S.iter));S.iter+=gi;S.iterLife+=gi;
+ mkt(dt);autoBuy();milestones();check();tips();upd();fit();
+ if(++sv>50){sv=0;saveAll()}},100);
+upd();
+</script></body></html>
